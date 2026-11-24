@@ -457,6 +457,7 @@ footer { margin-top: 40px; color: var(--dim); font-size: 12px; text-align: cente
 
   // ---------- chart sets: a main chart and MACD / RSI / TTM panes on one time axis ----------
   const OV = { ema: true, vwap: true, levels: true, trig: true };
+  const RESETS = {};  // how to put each chart back to its starting view (Ctrl+R / Alt+R)
   function paneChart(id) { return chart(id, { rightPriceScale: { borderColor: "rgba(150,215,245,.14)", minimumWidth: 64 }, timeScale: { visible: false }, handleScale: false, handleScroll: false }); }
   function chartSet(prefix) {
     const set = { main: chart(prefix + "chart", { rightPriceScale: { borderColor: "rgba(150,215,245,.14)", minimumWidth: 64 } }), macd: paneChart(prefix + "macd"), rsi: paneChart(prefix + "rsi"), ttm: paneChart(prefix + "ttm") };
@@ -616,7 +617,8 @@ footer { margin-top: 40px; color: var(--dim); font-size: 12px; text-align: cente
     s.setMarkers(marks);
     set.main.c.timeScale().setVisibleLogicalRange({ from: prev.length, to: bars.length + 4 });
     drawPanes(set, bars, [12, 26, 9]);
-    set.main.c.timeScale().setVisibleLogicalRange({ from: prev.length, to: bars.length + 4 });
+    RESETS.m = () => { set.main.c.timeScale().setVisibleLogicalRange({ from: prev.length, to: bars.length + 4 }); [set.main, set.macd, set.rsi, set.ttm].forEach(p => p.c.priceScale("right").applyOptions({ autoScale: true })); };
+    RESETS.m();
     crosshairReadout(set, bars, OV.ema ? emas : [], "mohlc");
     vixBadge(d, "mvix");
     renderChain(d);
@@ -667,10 +669,17 @@ footer { margin-top: 40px; color: var(--dim); font-size: 12px; text-align: cente
     if (!document.fullscreenElement) { document.querySelectorAll(".chartbox.full").forEach(b => b.classList.remove("full")); document.body.classList.remove("has-full"); }
   });
   document.addEventListener("keydown", e => { if (e.key === "Escape") { const b = document.querySelector(".chartbox.full"); if (b) toggleFull(b); } });
+  document.addEventListener("keydown", e => {
+    if (e.key.toLowerCase() !== "r" || e.shiftKey || !(e.ctrlKey || e.metaKey || e.altKey) || document.body.classList.contains("locked")) return;
+    e.preventDefault();
+    const b = document.querySelector(".chartbox.full"); if (b) { lastToggle = 0; toggleFull(b); }
+    Object.values(RESETS).forEach(f => { try { f(); } catch (err) { } });
+    const r = charts.rchart; if (r) r.c.timeScale().fitContent();
+  });
   document.querySelectorAll(".chartbox").forEach(box => {
     const chartEl = box.querySelector(".chart");
     if (!chartEl) return;
-    const hint = document.createElement("div"); hint.className = "fullhint"; hint.textContent = "Double-tap to close";
+    const hint = document.createElement("div"); hint.className = "fullhint"; hint.textContent = "Double-tap to close · Ctrl+R to reset";
     box.appendChild(hint);
     chartEl.addEventListener("dblclick", () => toggleFull(box));
     let tap = 0, tx = 0, ty = 0;
@@ -720,7 +729,8 @@ footer { margin-top: 40px; color: var(--dim); font-size: 12px; text-align: cente
     s.setMarkers(marks);
     set.main.c.timeScale().fitContent();
     drawPanes(set, bars, [8, 17, 9]);
-    set.main.c.timeScale().fitContent();
+    RESETS.c = () => { set.main.c.timeScale().fitContent(); [set.main, set.macd, set.rsi, set.ttm].forEach(p => p.c.priceScale("right").applyOptions({ autoScale: true })); };
+    RESETS.c();
     crosshairReadout(set, bars, emas, "cohlc");
     vixBadge(d, "cvix");
   }
