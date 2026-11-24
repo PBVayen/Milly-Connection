@@ -134,6 +134,29 @@ td.num, th.num { text-align: right; font-family: var(--mono); }
 .chartbox.full .fullhint { display: block; position: absolute; top: max(12px, env(safe-area-inset-top, 0px)); right: max(14px, env(safe-area-inset-right, 0px));
   font-size: 12px; color: var(--muted); background: rgba(8,18,28,.8); border: 1px solid var(--line); border-radius: 999px; padding: 4px 10px; z-index: 2; }
 body.has-full { overflow: hidden; }
+
+/* chart panes, toggles, VIX badge, crosshair readout */
+.chartwrap { position: relative; }
+.pane { height: 92px; width: 100%; border-top: 1px solid var(--line); position: relative; }
+.pane::before { content: attr(data-label); position: absolute; left: 6px; top: 4px; z-index: 3; font: 500 10.5px var(--mono); color: var(--muted); letter-spacing: .06em; pointer-events: none; }
+.vixbadge { position: absolute; top: 6px; right: 72px; z-index: 4; display: flex; gap: 10px; align-items: center; padding: 4px 10px; border-radius: 999px;
+  background: rgba(6,16,26,.78); border: 1px solid var(--line); font: 500 12px var(--mono); color: var(--text); pointer-events: none; }
+.vixbadge:empty { display: none; }
+.vixbadge b { color: var(--silver); font-weight: 600; letter-spacing: .06em; }
+.ohlc { position: absolute; top: 6px; left: 8px; z-index: 4; font: 11.5px var(--mono); color: var(--muted); pointer-events: none; display: flex; flex-wrap: wrap; gap: 4px 12px; max-width: calc(100% - 300px); }
+.ohlc i { font-style: normal; color: var(--text); }
+.toggles { display: flex; flex-wrap: wrap; gap: 6px; padding: 0 4px 10px; }
+.tog { display: inline-flex; align-items: center; gap: 6px; background: transparent; color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 4px 10px; font: 500 11.5px var(--sans); cursor: pointer; }
+.tog i { width: 8px; height: 8px; border-radius: 50%; background: var(--c, var(--silver)); opacity: .35; }
+.tog.on { color: var(--text); border-color: var(--line2); }
+.tog.on i { opacity: 1; }
+.dnfstate { display: inline-flex; gap: 6px; font: 11.5px var(--mono); }
+.dnfstate span { padding: 1px 6px; border-radius: 5px; border: 1px solid var(--line); }
+.dnfstate .u { color: #00c853; border-color: rgba(0,200,83,.4); } .dnfstate .d { color: #ff5252; border-color: rgba(255,82,82,.4); }
+.chartbox.full .pane { height: 13vh; flex: none; }
+.chartbox.full .chartwrap { flex: 1; min-height: 0; display: flex; }
+.chartbox.full .chartwrap .chart { flex: 1; }
+@media (max-width: 640px) { .pane { height: 78px; } .vixbadge { right: 62px; font-size: 11px; } .ohlc { display: none; } }
 /* login */
 #login { position: fixed; inset: 0; display: grid; place-items: center; padding: 16px; z-index: 10; }
 #login form { background: linear-gradient(180deg, rgba(16,32,48,.66), rgba(5,13,22,.7)); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); box-shadow: 0 30px 80px rgba(0,0,0,.65), inset 0 1px 0 rgba(255,255,255,.06); animation: rise .9s cubic-bezier(.2,.7,.2,1) both; }
@@ -197,7 +220,9 @@ footer { margin-top: 40px; color: var(--dim); font-size: 12px; text-align: cente
     <div class="tabs" id="mtabs"></div>
     <div class="panel chartbox">
       <div class="charthead" id="mhead"></div>
-      <div class="chart" id="mchart"></div>
+      <div class="toggles" id="mtoggles"></div>
+      <div class="chartwrap"><div class="chart" id="mchart"></div><div class="vixbadge" id="mvix"></div><div class="ohlc" id="mohlc"></div></div>
+      <div class="pane" id="mmacd"></div><div class="pane" id="mrsi"></div><div class="pane" id="mttm"></div>
       <div class="legend" id="mlegend"></div>
     </div>
     <div class="panel chain" style="margin-top:12px">
@@ -209,10 +234,11 @@ footer { margin-top: 40px; color: var(--dim); font-size: 12px; text-align: cente
   <section id="alerts">
     <h2>Today's alerts</h2>
     <div class="grid2">
-      <div class="panel tablewrap" id="alerts"></div>
+      <div class="panel tablewrap" id="alerttable"></div>
       <div class="panel chartbox" id="cbox">
         <div class="charthead" id="chead"></div>
-        <div class="chart sm" id="cchart"></div>
+        <div class="chartwrap"><div class="chart sm" id="cchart"></div><div class="vixbadge" id="cvix"></div><div class="ohlc" id="cohlc"></div></div>
+        <div class="pane" id="cmacd"></div><div class="pane" id="crsi"></div><div class="pane" id="cttm"></div>
       </div>
     </div>
   </section>
@@ -394,15 +420,98 @@ footer { margin-top: 40px; color: var(--dim); font-size: 12px; text-align: cente
       crosshair: { mode: 0, vertLine: { color: "rgba(170,225,250,.4)", labelBackgroundColor: "#163349" }, horzLine: { color: "rgba(170,225,250,.4)", labelBackgroundColor: "#163349" } },
       ...opts,
     });
-    charts[id] = { c, series: [] };
+    charts[id] = { c, series: [], el: id };
     return charts[id];
   }
-  function clear(ch) { ch.series.forEach(s => ch.c.removeSeries(s)); ch.series = []; }
+  function clear(ch) { ch.series.forEach(s => ch.c.removeSeries(s)); ch.series = []; (ch.lines || []).forEach(l => { try { l.s.removePriceLine(l.l); } catch (e) { } }); ch.lines = []; }
   function candles(ch, bars) {
     const s = ch.c.addCandlestickSeries({ upColor: "#e6f6ff", downColor: "#12263a", borderUpColor: "#e6f6ff", borderDownColor: "#7f9cb0", wickUpColor: "#a9dcf3", wickDownColor: "#3f6782" });
     s.setData(bars.map(b => ({ time: b[0], open: b[1], high: b[2], low: b[3], close: b[4] })));
     ch.series.push(s);
     return s;
+  }
+
+
+  // ---------- indicators (computed in the browser from the 1m bars) ----------
+  const IND = {
+    ema(v, n) { const k = 2 / (n + 1), o = []; let e = null; v.forEach((x, i) => { if (x == null) { o.push(null); return; } e = e == null ? x : x * k + e * (1 - k); o.push(i >= n - 1 ? e : null); }); return o; },
+    sma(v, n) { const o = []; let s = 0; v.forEach((x, i) => { s += x; if (i >= n) s -= v[i - n]; o.push(i >= n - 1 ? s / n : null); }); return o; },
+    std(v, n) { const m = IND.sma(v, n); return v.map((_, i) => { if (m[i] == null) return null; let a = 0; for (let j = i - n + 1; j <= i; j++) a += (v[j] - m[i]) ** 2; return Math.sqrt(a / n); }); },
+    macd(c, f, sl, sg) { const a = IND.ema(c, f), b = IND.ema(c, sl); const line = c.map((_, i) => a[i] != null && b[i] != null ? a[i] - b[i] : null);
+      const start = line.findIndex(x => x != null); const sigPart = IND.ema(line.slice(start < 0 ? 0 : start), sg); const sig = line.map((_, i) => i < start ? null : sigPart[i - start]);
+      return { line, sig, hist: line.map((x, i) => x != null && sig[i] != null ? x - sig[i] : null) }; },
+    rsi(c, n) { const o = [null]; let g = 0, l = 0; for (let i = 1; i < c.length; i++) { const d = c[i] - c[i - 1], up = Math.max(d, 0), dn = Math.max(-d, 0);
+      if (i <= n) { g += up / n; l += dn / n; o.push(i === n ? (l === 0 ? 100 : 100 - 100 / (1 + g / l)) : null); } else { g = (g * (n - 1) + up) / n; l = (l * (n - 1) + dn) / n; o.push(l === 0 ? 100 : 100 - 100 / (1 + g / l)); } } return o; },
+    vwap(bars) { const o = []; let pv = 0, vv = 0, day = null; for (const b of bars) { const d = Math.floor(b[0] / 86400); if (d !== day) { day = d; pv = 0; vv = 0; }
+      const tp = (b[2] + b[3] + b[4]) / 3, v = b[5] || 1; pv += tp * v; vv += v; o.push(pv / vv); } return o; },
+    ttm(bars, n = 20) {  // TTM Squeeze: momentum = linreg(close - avg(avg(HH, LL), SMA)), squeeze = Bollinger inside Keltner
+      const c = bars.map(b => b[4]), h = bars.map(b => b[2]), l = bars.map(b => b[3]), sma = IND.sma(c, n), sd = IND.std(c, n);
+      const tr = bars.map((b, i) => i ? Math.max(b[2] - b[3], Math.abs(b[2] - bars[i - 1][4]), Math.abs(b[3] - bars[i - 1][4])) : b[2] - b[3]), atr = IND.sma(tr, n);
+      const delta = c.map((x, i) => { if (i < n - 1) return null; let hh = -Infinity, ll = Infinity; for (let j = i - n + 1; j <= i; j++) { hh = Math.max(hh, h[j]); ll = Math.min(ll, l[j]); } return x - ((hh + ll) / 2 + sma[i]) / 2; });
+      const mom = delta.map((_, i) => { if (i < 2 * n - 2) return null; let sx = 0, sy = 0, sxy = 0, sxx = 0; for (let j = 0; j < n; j++) { const y = delta[i - n + 1 + j]; sx += j; sy += y; sxy += j * y; sxx += j * j; }
+        const sl = (n * sxy - sx * sy) / (n * sxx - sx * sx); return (sy - sl * sx) / n + sl * (n - 1); });
+      const sq = c.map((_, i) => sma[i] == null || atr[i] == null ? null : (sd[i] * 2 < atr[i] * 1.5));
+      return { mom, sq };
+    },
+  };
+
+  // ---------- chart sets: a main chart and MACD / RSI / TTM panes on one time axis ----------
+  const OV = { ema: true, vwap: true, levels: true, trig: true };
+  function paneChart(id) { return chart(id, { rightPriceScale: { borderColor: "rgba(150,215,245,.14)", minimumWidth: 64 }, timeScale: { visible: false }, handleScale: false, handleScroll: false }); }
+  function chartSet(prefix) {
+    const set = { main: chart(prefix + "chart", { rightPriceScale: { borderColor: "rgba(150,215,245,.14)", minimumWidth: 64 } }), macd: paneChart(prefix + "macd"), rsi: paneChart(prefix + "rsi"), ttm: paneChart(prefix + "ttm") };
+    if (!set.main.synced) {
+      set.main.synced = true;
+      set.main.c.timeScale().subscribeVisibleLogicalRangeChange(r => { if (r) [set.macd, set.rsi, set.ttm].forEach(p => p.c.timeScale().setVisibleLogicalRange(r)); });
+    }
+    [set.main, set.macd, set.rsi, set.ttm].forEach(clear);
+    return set;
+  }
+  const pts = (bars, v) => bars.map((b, i) => v[i] == null || Number.isNaN(v[i]) ? { time: b[0] } : { time: b[0], value: v[i] });
+  function addLine(ch, bars, v, color, width = 1, extra = {}) {
+    const own = ch.el.endsWith("chart") ? { autoscaleInfoProvider: () => null } : {};  // overlays never stretch the price scale; the candles set it
+    const s = ch.c.addLineSeries({ color, lineWidth: width, priceLineVisible: false, lastValueVisible: false, crosshairMarkerVisible: false, ...own, ...extra });
+    s.setData(pts(bars, v)); ch.series.push(s); return s;
+  }
+  function drawPanes(set, bars, macdCfg, labelSuffix = "") {
+    const c = bars.map(b => b[4]);
+    const m = IND.macd(c, ...macdCfg);
+    const h = set.macd.c.addHistogramSeries({ priceLineVisible: false, lastValueVisible: false });
+    h.setData(bars.map((b, i) => m.hist[i] == null ? { time: b[0] } : { time: b[0], value: m.hist[i], color: m.hist[i] >= 0 ? (i && m.hist[i] >= (m.hist[i - 1] ?? 0) ? "#5fe0a8" : "#2f8f6a") : (i && m.hist[i] <= (m.hist[i - 1] ?? 0) ? "#ff6b81" : "#8f3a4a") }));
+    set.macd.series.push(h); addLine(set.macd, bars, m.line, "#9fdcf5", 1); addLine(set.macd, bars, m.sig, "#ffd479", 1);
+    const r = IND.rsi(c, 14);
+    const rs = addLine(set.rsi, bars, r, "#c4a7ff", 1);
+    set.rsi.lines = [70, 30].map(v => ({ s: rs, l: rs.createPriceLine({ price: v, color: "rgba(150,215,245,.3)", lineWidth: 1, lineStyle: 2, axisLabelVisible: false }) }));
+    const t = IND.ttm(bars);
+    const th = set.ttm.c.addHistogramSeries({ priceLineVisible: false, lastValueVisible: false });
+    th.setData(bars.map((b, i) => t.mom[i] == null ? { time: b[0] } : { time: b[0], value: t.mom[i], color: t.mom[i] >= 0 ? (t.mom[i] >= (t.mom[i - 1] ?? 0) ? "#00e5ff" : "#1565c0") : (t.mom[i] <= (t.mom[i - 1] ?? 0) ? "#ff1744" : "#ffd600") }));
+    set.ttm.series.push(th);
+    const dots = set.ttm.c.addLineSeries({ lineVisible: false, pointMarkersVisible: true, pointMarkersRadius: 2, priceLineVisible: false, lastValueVisible: false, crosshairMarkerVisible: false });
+    dots.setData(bars.map((b, i) => t.sq[i] == null ? { time: b[0] } : { time: b[0], value: 0, color: t.sq[i] ? "#ff5252" : "#5fe0a8" }));
+    set.ttm.series.push(dots);
+    const last = a => { for (let i = a.length - 1; i >= 0; i--) if (a[i] != null) return a[i]; return null; };
+    const f = (x, d = 3) => x == null ? "–" : x.toFixed(d);
+    document.getElementById(set.macd.el).dataset.label = `MACD ${macdCfg.join("/")} ${f(last(m.line))} / ${f(last(m.sig))} · hist ${f(last(m.hist))}`;
+    document.getElementById(set.rsi.el).dataset.label = `RSI 14 ${f(last(r), 1)}`;
+    document.getElementById(set.ttm.el).dataset.label = `TTM SQUEEZE ${f(last(t.mom), 2)}${last(t.sq) ? " · squeeze ON" : ""}`;
+  }
+  function crosshairReadout(set, bars, emaSets, target) {
+    const idx = new Map(bars.map((b, i) => [b[0], i]));
+    const show = i => { if (i == null || !bars[i]) { $(target).innerHTML = ""; return; } const b = bars[i];
+      $(target).innerHTML = `<span>O <i>${b[1].toFixed(2)}</i></span><span>H <i>${b[2].toFixed(2)}</i></span><span>L <i>${b[3].toFixed(2)}</i></span><span>C <i>${b[4].toFixed(2)}</i></span>`
+        + emaSets.map(([n, v, col]) => v[i] == null ? "" : `<span style="color:${col}">${n} <i style="color:${col}">${v[i].toFixed(2)}</i></span>`).join(""); };
+    show(bars.length - 1);
+    if (!set.main.hooked) { set.main.hooked = true; set.main.c.subscribeCrosshairMove(p => set.main.onMove && set.main.onMove(p)); }
+    set.main.onMove = p => show(p && p.time != null ? idx.get(p.time) : bars.length - 1);
+  }
+  function vixBadge(d, id) {
+    const v = d.vix || {};
+    $(id).innerHTML = v.VIX ? `<b>VIX</b> ${v.VIX.last.toFixed(2)} <span class="${cls(v.VIX.change_pct)}">${v.VIX.change_pct > 0 ? "▲" : "▼"} ${pct(v.VIX.change_pct, 1)}</span>${v.VIX1D ? ` <b>1D</b> ${v.VIX1D.last.toFixed(2)}` : ""}` : "";
+  }
+  function toggles(d) {
+    const items = [["ema", "EMA 9/20/50/200", "#ffd479"], ["vwap", "VWAP", "#c084fc"], ["levels", "DNF levels", "#e91e63"], ["trig", "DNF triggers", "#00c853"]];
+    $("mtoggles").innerHTML = items.map(([k, t, c]) => `<button class="tog ${OV[k] ? "on" : ""}" data-ov="${k}" style="--c:${c}"><i></i>${t}</button>`).join("");
+    $("mtoggles").querySelectorAll(".tog").forEach(b => b.onclick = () => { OV[b.dataset.ov] = !OV[b.dataset.ov]; renderMarkets(d); });
   }
 
   // ---------- render ----------
@@ -459,25 +568,62 @@ footer { margin-top: 40px; color: var(--dim); font-size: 12px; text-align: cente
     if (!state.ticker || !tickers.includes(state.ticker)) state.ticker = tickers[0];
     $("mtabs").innerHTML = tickers.map(t => { const m = d.markets[t]; return `<button class="tab ${t === state.ticker ? "on" : ""}" data-t="${esc(t)}">${esc(t)}<em class="${cls(m.change_pct)}">${pct(m.change_pct, 2)}</em></button>`; }).join("");
     $("mtabs").querySelectorAll(".tab").forEach(b => b.onclick = () => { state.ticker = b.dataset.t; renderMarkets(d); });
-    const m = d.markets[state.ticker];
-    $("mhead").innerHTML = `<span><b>${esc(state.ticker)}</b> <span class="mono">${money(m.last).slice(1)}</span> <span class="${cls(m.change_pct)} mono">${pct(m.change_pct, 2)}</span></span><span class="muted">1-minute · ET</span>`;
-    const ch = chart("mchart"); clear(ch);
-    const s = candles(ch, m.bars);
-    if (m.bars.length && m.bars[0].length > 5 && m.bars.some(b => b[5])) {
-      const v = ch.c.addHistogramSeries({ priceScaleId: "vol", priceFormat: { type: "volume" }, lastValueVisible: false, priceLineVisible: false });
-      ch.c.priceScale("vol").applyOptions({ scaleMargins: { top: .82, bottom: 0 } });
-      v.setData(m.bars.map(b => ({ time: b[0], value: b[5] || 0, color: b[4] >= b[1] ? "rgba(190,232,252,.22)" : "rgba(60,110,150,.3)" })));
-      ch.series.push(v);
+    const m = d.markets[state.ticker], dnf = m.dnf;
+    const stTxt = dnf ? `<span class="dnfstate">${["5", "10", "15", "30", "60", "240"].map(tf => { const v = (dnf.states || {})[tf]; return `<span class="${v === 1 ? "u" : v === -1 ? "d" : ""}">${tf === "60" ? "1h" : tf === "240" ? "4h" : tf + "m"} ${v === 1 ? "▲" : v === -1 ? "▼" : "–"}</span>`; }).join("")}</span>` : "";
+    $("mhead").innerHTML = `<span><b>${esc(state.ticker)}</b> <span class="mono">${money(m.last).slice(1)}</span> <span class="${cls(m.change_pct)} mono">${pct(m.change_pct, 2)}</span></span>${stTxt}`;
+    toggles(d);
+    const prev = m.prev || [], bars = prev.concat(m.bars), set = chartSet("m");
+    const s = candles(set.main, bars);
+    if (bars.some(b => b[5])) {
+      const v = set.main.c.addHistogramSeries({ priceScaleId: "vol", priceFormat: { type: "volume" }, lastValueVisible: false, priceLineVisible: false });
+      set.main.c.priceScale("vol").applyOptions({ scaleMargins: { top: .84, bottom: 0 } });
+      v.setData(bars.map(b => ({ time: b[0], value: b[5] || 0, color: b[4] >= b[1] ? "rgba(190,232,252,.18)" : "rgba(60,110,150,.26)" })));
+      set.main.series.push(v);
     }
+    const c = bars.map(b => b[4]);
+    const emas = [["E9", IND.ema(c, 9), "#ffd479"], ["E20", IND.ema(c, 20), "#f472b6"], ["E50", IND.ema(c, 50), "#7cc4e6"], ["E200", IND.ema(c, 200), "#ffffff"]];
+    if (OV.ema) emas.forEach(([, v, col], i) => addLine(set.main, bars, v, col, i === 3 ? 2 : 1));
+    const vw = IND.vwap(bars);
+    if (OV.vwap) addLine(set.main, bars, vw.map((x, i) => i < prev.length ? null : x), "#c084fc", 2, { lineStyle: 2 });
+    // DNF levels: pink majors near price, quartiles of the active structure and its neighbours, active 50% highlighted
+    if (OV.levels && dnf) {
+      const near = x => Math.abs(x - m.last) / m.last < 0.02;
+      dnf.majors.filter(l => near(l.price)).forEach(l => set.main.lines.push({ s, l: s.createPriceLine({ price: l.price, color: "#e91e63", lineWidth: 1, lineStyle: 0, axisLabelVisible: true, title: l.name }) }));
+      const act = dnf.active;
+      dnf.quartiles.filter(q => act ? Math.abs(q.s - act.index) <= 1 : near(q.price)).forEach(q => {
+        const isMid = act && q.s === act.index && q.pct === 0.5;
+        set.main.lines.push({ s, l: s.createPriceLine({ price: q.price, color: isMid ? "#ffd600" : "rgba(64,140,255,.75)", lineWidth: 1, lineStyle: isMid ? 0 : 1, axisLabelVisible: isMid, title: isMid ? "50%" : "" }) });
+      });
+    }
+    // markers: strategy alerts + DNF arrows (green/red aligned, blue 5m-only, yellow 30m/1h/4h)
     const marks = visibleAlerts(d).filter(a => a.ticker === state.ticker).map(a => ({
       time: etT(d.day, a.time), position: a.side === "put" ? "aboveBar" : "belowBar", color: shade(a.strategy),
       shape: a.side === "put" ? "arrowDown" : "arrowUp", text: `${short(a.strategy)} ${a.side === "put" ? "P" : "C"}`,
-    })).sort((x, y) => x.time - y.time);
+    }));
+    if (OV.trig && dnf) {
+      dnf.arrows.forEach(a => marks.push({ time: a.t, position: a.dir === 1 ? "belowBar" : "aboveBar", shape: a.dir === 1 ? "arrowUp" : "arrowDown",
+        color: a.color === "green" ? (a.dir === 1 ? "#00c853" : "#ff1744") : "#2979ff", size: 1 }));
+      dnf.htf.forEach(h => marks.push({ time: h.t, position: h.dir === 1 ? "belowBar" : "aboveBar", shape: h.dir === 1 ? "arrowUp" : "arrowDown", color: "#ffd600", text: h.tf >= 60 ? h.tf / 60 + "h" : h.tf + "m", size: 0.6 }));
+      // entry / stop line on the trigger candle's body, TP1-TP3 beyond it (8 five-minute bars long, like the Pine script)
+      dnf.trades.slice(-2).forEach(tr => {  // the most recent 2, like the indicator's "trades kept on chart"
+        const end = tr.t + 8 * 300, col = tr.state === "stopped" ? "#7f9cb0" : tr.dir === 1 ? "#26a69a" : "#ef5350";
+        const seg = (price, color, style, w) => { const ls = set.main.c.addLineSeries({ color, lineWidth: w, lineStyle: style, priceLineVisible: false, lastValueVisible: false, crosshairMarkerVisible: false, autoscaleInfoProvider: () => null }); ls.setData([{ time: tr.t, value: price }, { time: end, value: price }].filter(p => p.time <= bars[bars.length - 1][0] || p.time === tr.t)); set.main.series.push(ls); };
+        seg(tr.entry, col, tr.state === "stopped" ? 2 : 0, 2);
+        tr.tps.forEach((tp, i) => seg(tp, i < tr.hits ? col : col + "88", 1, 1));
+      });
+    }
+    marks.sort((x, y) => x.time - y.time);
     s.setMarkers(marks);
-    ch.c.timeScale().fitContent();
+    set.main.c.timeScale().setVisibleLogicalRange({ from: prev.length, to: bars.length + 4 });
+    drawPanes(set, bars, [12, 26, 9]);
+    set.main.c.timeScale().setVisibleLogicalRange({ from: prev.length, to: bars.length + 4 });
+    crosshairReadout(set, bars, OV.ema ? emas : [], "mohlc");
+    vixBadge(d, "mvix");
     renderChain(d);
     const keys = [...new Set(visibleAlerts(d).map(a => a.strategy))];
-    $("mlegend").innerHTML = keys.map(k => `<span><span class="swatch" style="background:${shade(k)}"></span>${esc(strat(k).name)}</span>`).join("") + `<span class="dim">▲ call · ▼ put</span>`;
+    $("mlegend").innerHTML = keys.map(k => `<span><span class="swatch" style="background:${shade(k)}"></span>${esc(strat(k).name)}</span>`).join("")
+      + (dnf ? `<span><span style="color:#00c853">▲</span><span style="color:#ff1744">▼</span> DNF aligned 5/10/15 · <span style="color:#2979ff">▲▼</span> 5m only · <span style="color:#ffd600">▲▼</span> 30m/1h/4h</span>` : "")
+      + (dnf && dnf.active ? `<span class="dim">structure ${dnf.active.low.toFixed(2)}–${dnf.active.high.toFixed(2)}, 50% ${dnf.active.mid.toFixed(2)}</span>` : "");
   }
 
 
@@ -538,10 +684,10 @@ footer { margin-top: 40px; color: var(--dim); font-size: 12px; text-align: cente
 
   function renderAlerts(d) {
     const rows = visibleAlerts(d).slice().sort((a, b) => a.time < b.time ? 1 : -1);
-    if (!rows.length) { $("alerts").innerHTML = `<div class="empty">No alerts${state.filter ? " for " + esc(strat(state.filter).name) : ""} yet today.</div>`; $("cbox").style.display = "none"; return; }
+    if (!rows.length) { $("alerttable").innerHTML = `<div class="empty">No alerts${state.filter ? " for " + esc(strat(state.filter).name) : ""} yet today.</div>`; $("cbox").style.display = "none"; return; }
     $("cbox").style.display = "";
     if (!rows.some(a => a.id === state.alertId)) state.alertId = (rows.find(a => a.status === "open") || rows[0]).id;
-    $("alerts").innerHTML = `<table><thead><tr><th>Time</th><th>Strategy</th><th>Contract</th><th class="num">Entry</th><th class="num">Bid / Ask</th><th class="num">Last</th><th class="num">Now</th><th class="num">Peak</th><th class="num">Goal</th><th class="num">Stop</th><th>Status</th></tr></thead><tbody>`
+    $("alerttable").innerHTML = `<table><thead><tr><th>Time</th><th>Strategy</th><th>Contract</th><th class="num">Entry</th><th class="num">Bid / Ask</th><th class="num">Last</th><th class="num">Now</th><th class="num">Peak</th><th class="num">Goal</th><th class="num">Stop</th><th>Status</th></tr></thead><tbody>`
       + rows.map(a => `<tr class="${a.id === state.alertId ? "on" : ""}" data-id="${a.id}">
         <td class="mono">${esc(a.time)}</td>
         <td><span class="swatch" style="background:${shade(a.strategy)}"></span>${esc(strat(a.strategy).name)}</td>
@@ -551,24 +697,32 @@ footer { margin-top: 40px; color: var(--dim); font-size: 12px; text-align: cente
         <td class="num">${pct(a.peak_pct)}</td><td class="num">${money(a.goal)}</td><td class="num">${a.stop == null ? '<span class="dim">none</span>' : money(a.stop)}</td>
         <td><span class="st ${esc(a.status)}">${esc(a.status)}${a.closed ? " " + esc(a.closed) : ""}</span></td></tr>`).join("")
       + `</tbody></table>`;
-    $("alerts").querySelectorAll("tbody tr").forEach(tr => tr.onclick = () => { state.alertId = Number(tr.dataset.id); renderAlerts(d); });
+    $("alerttable").querySelectorAll("tbody tr").forEach(tr => tr.onclick = () => { state.alertId = Number(tr.dataset.id); renderAlerts(d); });
     renderContract(d, rows.find(a => a.id === state.alertId));
   }
 
   function renderContract(d, a) {
     $("chead").innerHTML = `<span><b>${esc(a.contract)}</b> <span class="muted">${esc(strat(a.strategy).name)} · ${esc(a.time)} ET</span></span>`
-      + `<span class="mono"><span class="muted">entry</span> ${money(a.entry)} · <span class="muted">now</span> <span class="${cls(a.result_pct ?? a.pct)}">${pct(a.result_pct ?? a.pct)}</span> · <span class="muted">peak</span> ${pct(a.peak_pct)}</span>`;
-    const ch = chart("cchart"); clear(ch);
+      + `<span class="mono"><span class="muted">entry</span> ${money(a.entry)} · <span class="muted">now</span> <span class="${cls(a.result_pct ?? a.pct)}">${pct(a.result_pct ?? a.pct)}</span> · <span class="muted">peak</span> ${pct(a.peak_pct)}${a.quote && a.quote.bid != null ? ` · <span class="muted">bid/ask</span> ${money(a.quote.bid)} × ${money(a.quote.ask)}` : ""}</span>`;
+    const set = chartSet("c");
     if (!a.bars || !a.bars.length) return;
-    const s = candles(ch, a.bars);
-    const line = (price, title, color, style) => price != null && s.createPriceLine({ price, title, color, lineWidth: 1, lineStyle: style, axisLabelVisible: true });
-    line(a.entry, "entry", "#bfe7f8", 0);
-    line(a.goal, "goal", "#8fd8ab", 2);
+    const bars = a.bars, s = candles(set.main, bars), c = bars.map(b => b[4]);
+    const emas = [["E5", IND.ema(c, 5), "#ffd479"], ["E9", IND.ema(c, 9), "#f472b6"], ["E20", IND.ema(c, 20), "#c4a7ff"], ["E50", IND.ema(c, 50), "#7cc4e6"], ["E200", IND.ema(c, 200), "#ffffff"]];
+    emas.forEach(([, v, col], i) => addLine(set.main, bars, v, col, i === 4 ? 2 : 1));
+    addLine(set.main, bars, IND.vwap(bars), "#c084fc", 1, { lineStyle: 2 });
+    const line = (price, title, color, style) => price != null && set.main.lines.push({ s, l: s.createPriceLine({ price, title, color, lineWidth: 1, lineStyle: style, axisLabelVisible: true }) });
+    line(a.entry, "BUY", "#ffffff", 0);
+    line(a.goal, a.goal && a.entry ? "+" + Math.round((a.goal / a.entry - 1) * 100) + "%" : "goal", "#5fe0a8", 2);
     line(a.stop, "stop", "#e89595", 2);
-    const marks = [{ time: a.bars[0][0], position: "belowBar", color: "#f4fbff", shape: "arrowUp", text: "buy" }];
+    const t0 = etT(d.day, a.time);
+    const marks = [{ time: bars.find(b => b[0] >= t0) ? bars.find(b => b[0] >= t0)[0] : bars[0][0], position: "belowBar", color: "#f4fbff", shape: "arrowUp", text: "CALLOUT " + money(a.entry).slice(1) }];
     if (a.closed) marks.push({ time: etT(d.day, a.closed), position: "aboveBar", color: a.status === "goal" ? "#8fd8ab" : a.status === "stop" ? "#e89595" : "#7f9cb0", shape: "arrowDown", text: a.status });
     s.setMarkers(marks);
-    ch.c.timeScale().fitContent();
+    set.main.c.timeScale().fitContent();
+    drawPanes(set, bars, [8, 17, 9]);
+    set.main.c.timeScale().fitContent();
+    crosshairReadout(set, bars, emas, "cohlc");
+    vixBadge(d, "cvix");
   }
 
   function renderResults(d) {
