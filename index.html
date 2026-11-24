@@ -6,7 +6,7 @@
 <title>Milly Connection</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Cinzel:wght@500;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Cinzel:wght@500;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://unpkg.com/lightweight-charts@4.2.3/dist/lightweight-charts.standalone.production.js"></script>
 <style>
 :root {
@@ -15,12 +15,13 @@
   --chrome: linear-gradient(180deg, #ffffff 0%, #d9d9de 38%, #8e8e96 62%, #e6e6ea 100%);
   --up: #8fd8ab; --down: #e89595; --warn: #e3c98a;
   --s1: #f4f4f6; --s2: #a6a6b0; --s3: #6b6b74;
-  --sans: "Inter", system-ui, -apple-system, sans-serif; --disp: "Cinzel", Georgia, "Times New Roman", serif;
+  --sans: "Manrope", system-ui, -apple-system, "Segoe UI", sans-serif; --disp: "Cinzel", Georgia, "Times New Roman", serif;
   --mono: "JetBrains Mono", ui-monospace, Menlo, monospace; --r: 14px;
 }
 * { box-sizing: border-box; }
 html, body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.5 var(--sans); }
-body { background: radial-gradient(1200px 500px at 50% -200px, rgba(210,210,220,.08), transparent 70%), var(--bg); min-height: 100vh; }
+body { background: var(--bg); min-height: 100vh; }
+.wrap { position: relative; z-index: 1; }
 .wrap { max-width: 1240px; margin: 0 auto; padding: 20px 16px 60px; }
 a { color: var(--silver); }
 .mono { font-family: var(--mono); }
@@ -29,24 +30,29 @@ a { color: var(--silver); }
 /* header */
 header { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 14px; padding: 6px 0 18px; border-bottom: 1px solid var(--line); }
 .brand { display: flex; align-items: baseline; gap: 12px; }
-.brand h1 { margin: 0; font: 700 26px/1 var(--disp); letter-spacing: .14em; background: var(--chrome); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.brand h1 { margin: 0; font: 700 26px/1 var(--disp); letter-spacing: .14em; }
+.sheen { background: linear-gradient(100deg, #8e8e96 0%, #e9e9ee 30%, #ffffff 42%, #9a9aa2 55%, #dcdce2 75%, #8e8e96 100%); background-size: 250% 100%; -webkit-background-clip: text; background-clip: text; color: transparent; animation: sheen 7s ease-in-out infinite; }
+@keyframes sheen { 0%, 100% { background-position: 100% 0; } 50% { background-position: 0% 0; } }
 .brand span { color: var(--muted); font-size: 12px; letter-spacing: .2em; text-transform: uppercase; }
 .status { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 .pill { display: inline-flex; align-items: center; gap: 7px; padding: 5px 11px; border: 1px solid var(--line); border-radius: 999px; background: var(--panel); font-size: 12px; color: var(--silver); white-space: nowrap; }
 .pill i { width: 7px; height: 7px; border-radius: 50%; background: var(--dim); }
-.pill.ok i { background: var(--up); box-shadow: 0 0 8px var(--up); } .pill.warn i { background: var(--warn); } .pill.bad i { background: var(--down); }
+.pill.ok i { background: var(--up); box-shadow: 0 0 8px var(--up); animation: pulse 2.4s ease-in-out infinite; }
+@keyframes pulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(143,216,171,.55); } 50% { box-shadow: 0 0 0 5px rgba(143,216,171,0); } } .pill.warn i { background: var(--warn); } .pill.bad i { background: var(--down); }
 .banner { margin: 14px 0 0; padding: 9px 14px; border: 1px dashed var(--line2); border-radius: 10px; color: var(--silver); font-size: 13px; }
 
 /* sections */
 section { margin-top: 26px; scroll-margin-top: 16px; }
 h2 { margin: 0 0 12px; font: 500 12px/1 var(--disp); letter-spacing: .22em; text-transform: uppercase; color: var(--muted); display: flex; align-items: center; gap: 10px; }
 h2::after { content: ""; flex: 1; height: 1px; background: var(--line); }
-.panel { background: linear-gradient(180deg, var(--panel2), var(--panel)); border: 1px solid var(--line); border-radius: var(--r); }
+.panel { background: linear-gradient(180deg, rgba(22,22,26,.82), rgba(11,11,13,.82)); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); border: 1px solid var(--line); border-radius: var(--r); box-shadow: inset 0 1px 0 rgba(255,255,255,.04); }
+section { animation: rise .7s cubic-bezier(.2,.7,.2,1) both; }
+section:nth-of-type(2) { animation-delay: .06s; } section:nth-of-type(3) { animation-delay: .12s; } section:nth-of-type(4) { animation-delay: .18s; }
 
 /* strategy cards */
 .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px; }
-.card { padding: 16px; cursor: pointer; transition: border-color .15s, transform .15s; position: relative; }
-.card:hover { border-color: var(--line2); }
+.card { padding: 16px; cursor: pointer; transition: border-color .2s, transform .2s, box-shadow .2s; position: relative; }
+.card:hover { border-color: var(--line2); transform: translateY(-2px); box-shadow: 0 14px 40px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.06); }
 .card.on { border-color: var(--silver); box-shadow: 0 0 0 1px rgba(220,220,230,.25), 0 8px 30px rgba(0,0,0,.6); }
 .card .top { display: flex; justify-content: space-between; gap: 8px; align-items: flex-start; }
 .card h3 { margin: 0; font: 600 17px/1.2 var(--disp); }
@@ -89,10 +95,28 @@ td.num, th.num { text-align: right; font-family: var(--mono); }
 .empty { padding: 26px; text-align: center; color: var(--muted); }
 .grid2 { display: grid; grid-template-columns: 1fr; gap: 12px; }
 
+
+/* background: drifting silver light, a grid that fades out, floating dust */
+.bg { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
+.bg .glow { position: absolute; border-radius: 50%; filter: blur(80px); opacity: .5; }
+.bg .g1 { width: 60vmax; height: 60vmax; left: -15vmax; top: -25vmax; background: radial-gradient(circle, rgba(220,220,232,.16), transparent 65%); animation: drift1 38s ease-in-out infinite alternate; }
+.bg .g2 { width: 55vmax; height: 55vmax; right: -20vmax; top: 20vh; background: radial-gradient(circle, rgba(170,170,185,.12), transparent 65%); animation: drift2 46s ease-in-out infinite alternate; }
+.bg .g3 { width: 45vmax; height: 45vmax; left: 25vw; bottom: -30vmax; background: radial-gradient(circle, rgba(240,240,248,.08), transparent 65%); animation: drift1 54s ease-in-out infinite alternate-reverse; }
+@keyframes drift1 { from { transform: translate(0, 0) scale(1); } to { transform: translate(12vw, 8vh) scale(1.12); } }
+@keyframes drift2 { from { transform: translate(0, 0) scale(1.05); } to { transform: translate(-10vw, -10vh) scale(.95); } }
+.bg .grid { position: absolute; inset: -60px; background-image: linear-gradient(rgba(205,205,215,.045) 1px, transparent 1px), linear-gradient(90deg, rgba(205,205,215,.045) 1px, transparent 1px); background-size: 60px 60px; -webkit-mask-image: radial-gradient(ellipse 70% 60% at 50% 30%, #000 30%, transparent 80%); mask-image: radial-gradient(ellipse 70% 60% at 50% 30%, #000 30%, transparent 80%); animation: gridpan 60s linear infinite; }
+@keyframes gridpan { to { transform: translate(60px, 60px); } }
+.bg canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+.bg .vignette { position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 40%, transparent 55%, rgba(0,0,0,.7) 100%); }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
 /* login */
-#login { position: fixed; inset: 0; display: grid; place-items: center; padding: 16px; background: radial-gradient(900px 500px at 50% 30%, rgba(210,210,220,.09), transparent 70%), var(--bg); z-index: 10; }
+#login { position: fixed; inset: 0; display: grid; place-items: center; padding: 16px; z-index: 10; }
+#login form { background: linear-gradient(180deg, rgba(24,24,28,.72), rgba(10,10,12,.72)); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); box-shadow: 0 30px 80px rgba(0,0,0,.65), inset 0 1px 0 rgba(255,255,255,.06); animation: rise .9s cubic-bezier(.2,.7,.2,1) both; }
+@keyframes rise { from { opacity: 0; transform: translateY(14px) scale(.985); } to { opacity: 1; transform: none; } }
 #login form { width: 100%; max-width: 380px; padding: 34px 28px 28px; text-align: center; }
-#login h1 { margin: 0 0 28px; font: 700 28px/1.15 var(--disp); letter-spacing: .16em; background: var(--chrome); -webkit-background-clip: text; background-clip: text; color: transparent; }
+#login h1 { margin: 0 0 28px; font: 700 28px/1.15 var(--disp); letter-spacing: .16em; }
 #login input[type=password] { width: 100%; padding: 12px 14px; border-radius: 10px; border: 1px solid var(--line2); background: #08080a; color: var(--text); font: 15px var(--sans); outline: none; }
 #login input[type=password]:focus { border-color: var(--silver); box-shadow: 0 0 0 3px rgba(220,220,230,.08); }
 #login label { display: flex; align-items: center; gap: 8px; justify-content: center; margin: 14px 0 18px; color: var(--muted); font-size: 12.5px; cursor: pointer; }
@@ -108,9 +132,10 @@ footer { margin-top: 40px; color: var(--dim); font-size: 12px; text-align: cente
 </style>
 </head>
 <body class="locked">
+<div class="bg" aria-hidden="true"><div class="glow g1"></div><div class="glow g2"></div><div class="glow g3"></div><div class="grid"></div><canvas id="dust"></canvas><div class="vignette"></div></div>
 <div id="login">
   <form class="panel" autocomplete="on">
-    <h1>MILLY<br>CONNECTION</h1>
+    <h1 class="sheen">MILLY<br>CONNECTION</h1>
     <input type="text" name="username" value="desk" autocomplete="username" hidden>
     <input type="password" id="pass" placeholder="Passphrase" autocomplete="current-password" required>
     <label><input type="checkbox" id="remember"> Remember on this device</label>
@@ -120,7 +145,7 @@ footer { margin-top: 40px; color: var(--dim); font-size: 12px; text-align: cente
 </div>
 <div class="wrap">
   <header>
-    <div class="brand"><h1>MILLY CONNECTION</h1><span>0DTE desk</span></div>
+    <div class="brand"><h1 class="sheen">MILLY CONNECTION</h1><span>0DTE desk</span></div>
     <div class="status"><span class="status" id="status"></span><button class="lock" id="lock" title="Forget the passphrase on this device">Lock</button></div>
   </header>
   <div id="banner"></div>
@@ -164,6 +189,35 @@ footer { margin-top: 40px; color: var(--dim); font-size: 12px; text-align: cente
   <footer>Read-only alerts. No orders are placed. Not financial advice.</footer>
 </div>
 
+<script>
+// Silver dust: a few slow specks drifting up. Pauses when the tab is hidden; off for reduced motion.
+(() => {
+  const c = document.getElementById("dust"), x = c.getContext("2d");
+  if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  let w, h, dpr, pts = [], running = false;
+  const size = () => {
+    dpr = Math.min(2, devicePixelRatio || 1); w = c.clientWidth; h = c.clientHeight;
+    c.width = w * dpr; c.height = h * dpr; x.setTransform(dpr, 0, 0, dpr, 0, 0);
+    const n = Math.round(Math.min(70, w * h / 22000));
+    pts = Array.from({ length: n }, () => ({ x: Math.random() * w, y: Math.random() * h, r: Math.random() * 1.2 + .3,
+      v: Math.random() * .12 + .03, a: Math.random() * .45 + .1, t: Math.random() * 6.28 }));
+  };
+  const step = () => {
+    if (document.hidden) { running = false; return; }
+    x.clearRect(0, 0, w, h);
+    for (const p of pts) {
+      p.y -= p.v; p.t += .01; p.x += Math.sin(p.t) * .08;
+      if (p.y < -4) { p.y = h + 4; p.x = Math.random() * w; }
+      x.globalAlpha = p.a * (.6 + .4 * Math.sin(p.t * 1.7));
+      x.fillStyle = "#e6e6ee"; x.beginPath(); x.arc(p.x, p.y, p.r, 0, 6.283); x.fill();
+    }
+    requestAnimationFrame(step);
+  };
+  const go = () => { if (!running && !document.hidden) { running = true; requestAnimationFrame(step); } };
+  addEventListener("resize", size); document.addEventListener("visibilitychange", go);
+  size(); go();
+})();
+</script>
 <script src="config.js"></script>
 <script src="sample-data.js"></script>
 <script>
