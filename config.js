@@ -1,8 +1,8 @@
-// Where the page reads the bot's data (format: docs/dashboard-data.md).
-// Leave dataUrl empty to show the made-up sample day from sample-data.js.
-// "{stamp}" is replaced by the current UTC minute (YYYYMMDDHHmm) so a per-minute path dodges CDN caching;
-// the page also tries the previous minute.
+// Where the page reads the bot's data (format: docs/dashboard-data.md). Empty dataUrl = the sample day.
+// "{stamp}" = the current UTC minute (YYYYMMDDHHmm); each minute's push lands at a new path so the raw CDN's
+// 5-minute cache can't serve stale data. fallbackUrl is the latest snapshot, for when no minute file is new.
 window.DESK_CONFIG = {
-  dataUrl: "",
+  dataUrl: "https://raw.githubusercontent.com/PBVayen/Milly-Connection/data/m/{stamp}.json",
+  fallbackUrl: "https://raw.githubusercontent.com/PBVayen/Milly-Connection/data/data.json",
   refreshSeconds: 60,
 };

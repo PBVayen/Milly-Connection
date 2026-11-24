@@ -10,11 +10,11 @@
 <script src="https://unpkg.com/lightweight-charts@4.2.3/dist/lightweight-charts.standalone.production.js"></script>
 <style>
 :root {
-  --bg: #040405; --panel: #0c0c0e; --panel2: #131316; --line: rgba(205,205,215,.13); --line2: rgba(205,205,215,.32);
-  --text: #ededf0; --silver: #c4c4cc; --muted: #8b8b94; --dim: #56565e;
-  --chrome: linear-gradient(180deg, #ffffff 0%, #d9d9de 38%, #8e8e96 62%, #e6e6ea 100%);
+  --bg: #02060c; --panel: #08121c; --panel2: #0e1a26; --line: rgba(150,215,245,.14); --line2: rgba(150,215,245,.36);
+  --text: #f3f9fd; --silver: #bfe7f8; --muted: #7f9cb0; --dim: #4a6275;
+  --chrome: linear-gradient(180deg, #ffffff 0%, #d8f1fc 38%, #5fb3dc 62%, #e4f6ff 100%);
   --up: #8fd8ab; --down: #e89595; --warn: #e3c98a;
-  --s1: #f4f4f6; --s2: #a6a6b0; --s3: #6b6b74;
+  --s1: #f4fbff; --s2: #9fd3ea; --s3: #3f6782;
   --sans: "Manrope", system-ui, -apple-system, "Segoe UI", sans-serif; --disp: "Cinzel", Georgia, "Times New Roman", serif;
   --mono: "JetBrains Mono", ui-monospace, Menlo, monospace; --r: 14px;
 }
@@ -31,7 +31,7 @@ a { color: var(--silver); }
 header { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 14px; padding: 6px 0 18px; border-bottom: 1px solid var(--line); }
 .brand { display: flex; align-items: baseline; gap: 12px; }
 .brand h1 { margin: 0; font: 700 26px/1 var(--disp); letter-spacing: .14em; }
-.sheen { background: linear-gradient(100deg, #8e8e96 0%, #e9e9ee 30%, #ffffff 42%, #9a9aa2 55%, #dcdce2 75%, #8e8e96 100%); background-size: 250% 100%; -webkit-background-clip: text; background-clip: text; color: transparent; animation: sheen 7s ease-in-out infinite; }
+.sheen { background: linear-gradient(100deg, #5fb3dc 0%, #e6f6ff 30%, #ffffff 42%, #7cc4e6 55%, #d4f0fc 75%, #5fb3dc 100%); background-size: 250% 100%; -webkit-background-clip: text; background-clip: text; color: transparent; animation: sheen 7s ease-in-out infinite; }
 @keyframes sheen { 0%, 100% { background-position: 100% 0; } 50% { background-position: 0% 0; } }
 .brand span { color: var(--muted); font-size: 12px; letter-spacing: .2em; text-transform: uppercase; }
 .status { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
@@ -45,7 +45,7 @@ header { display: flex; flex-wrap: wrap; align-items: center; justify-content: s
 section { margin-top: 26px; scroll-margin-top: 16px; }
 h2 { margin: 0 0 12px; font: 500 12px/1 var(--disp); letter-spacing: .22em; text-transform: uppercase; color: var(--muted); display: flex; align-items: center; gap: 10px; }
 h2::after { content: ""; flex: 1; height: 1px; background: var(--line); }
-.panel { background: linear-gradient(180deg, rgba(22,22,26,.82), rgba(11,11,13,.82)); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); border: 1px solid var(--line); border-radius: var(--r); box-shadow: inset 0 1px 0 rgba(255,255,255,.04); }
+.panel { background: linear-gradient(180deg, rgba(14,28,42,.78), rgba(6,14,24,.8)); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); border: 1px solid var(--line); border-radius: var(--r); box-shadow: inset 0 1px 0 rgba(255,255,255,.04); }
 section { animation: rise .7s cubic-bezier(.2,.7,.2,1) both; }
 section:nth-of-type(2) { animation-delay: .06s; } section:nth-of-type(3) { animation-delay: .12s; } section:nth-of-type(4) { animation-delay: .18s; }
 
@@ -53,7 +53,7 @@ section:nth-of-type(2) { animation-delay: .06s; } section:nth-of-type(3) { anima
 .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px; }
 .card { padding: 16px; cursor: pointer; transition: border-color .2s, transform .2s, box-shadow .2s; position: relative; }
 .card:hover { border-color: var(--line2); transform: translateY(-2px); box-shadow: 0 14px 40px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.06); }
-.card.on { border-color: var(--silver); box-shadow: 0 0 0 1px rgba(220,220,230,.25), 0 8px 30px rgba(0,0,0,.6); }
+.card.on { border-color: var(--silver); box-shadow: 0 0 0 1px rgba(170,225,250,.3), 0 8px 30px rgba(0,0,0,.6); }
 .card .top { display: flex; justify-content: space-between; gap: 8px; align-items: flex-start; }
 .card h3 { margin: 0; font: 600 17px/1.2 var(--disp); }
 .swatch { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 8px; vertical-align: 1px; }
@@ -88,7 +88,7 @@ th { text-align: left; font-weight: 500; color: var(--dim); font-size: 11px; let
 td { padding: 10px 12px; border-bottom: 1px solid var(--line); white-space: nowrap; }
 tbody tr { cursor: pointer; }
 tbody tr:hover td { background: rgba(255,255,255,.025); }
-tbody tr.on td { background: rgba(220,220,230,.06); }
+tbody tr.on td { background: rgba(170,225,250,.07); }
 td.num, th.num { text-align: right; font-family: var(--mono); }
 .st { font-size: 11px; padding: 2px 8px; border-radius: 6px; border: 1px solid var(--line2); }
 .st.goal { color: var(--up); border-color: rgba(143,216,171,.4); } .st.stop { color: var(--down); border-color: rgba(232,149,149,.4); } .st.open { color: var(--text); } .st.close { color: var(--muted); }
@@ -99,12 +99,12 @@ td.num, th.num { text-align: right; font-family: var(--mono); }
 /* background: drifting silver light, a grid that fades out, floating dust */
 .bg { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
 .bg .glow { position: absolute; border-radius: 50%; filter: blur(80px); opacity: .5; }
-.bg .g1 { width: 60vmax; height: 60vmax; left: -15vmax; top: -25vmax; background: radial-gradient(circle, rgba(220,220,232,.16), transparent 65%); animation: drift1 38s ease-in-out infinite alternate; }
-.bg .g2 { width: 55vmax; height: 55vmax; right: -20vmax; top: 20vh; background: radial-gradient(circle, rgba(170,170,185,.12), transparent 65%); animation: drift2 46s ease-in-out infinite alternate; }
-.bg .g3 { width: 45vmax; height: 45vmax; left: 25vw; bottom: -30vmax; background: radial-gradient(circle, rgba(240,240,248,.08), transparent 65%); animation: drift1 54s ease-in-out infinite alternate-reverse; }
+.bg .g1 { width: 60vmax; height: 60vmax; left: -15vmax; top: -25vmax; background: radial-gradient(circle, rgba(120,200,240,.2), transparent 65%); animation: drift1 38s ease-in-out infinite alternate; }
+.bg .g2 { width: 55vmax; height: 55vmax; right: -20vmax; top: 20vh; background: radial-gradient(circle, rgba(70,150,210,.16), transparent 65%); animation: drift2 46s ease-in-out infinite alternate; }
+.bg .g3 { width: 45vmax; height: 45vmax; left: 25vw; bottom: -30vmax; background: radial-gradient(circle, rgba(220,245,255,.09), transparent 65%); animation: drift1 54s ease-in-out infinite alternate-reverse; }
 @keyframes drift1 { from { transform: translate(0, 0) scale(1); } to { transform: translate(12vw, 8vh) scale(1.12); } }
 @keyframes drift2 { from { transform: translate(0, 0) scale(1.05); } to { transform: translate(-10vw, -10vh) scale(.95); } }
-.bg .grid { position: absolute; inset: -60px; background-image: linear-gradient(rgba(205,205,215,.045) 1px, transparent 1px), linear-gradient(90deg, rgba(205,205,215,.045) 1px, transparent 1px); background-size: 60px 60px; -webkit-mask-image: radial-gradient(ellipse 70% 60% at 50% 30%, #000 30%, transparent 80%); mask-image: radial-gradient(ellipse 70% 60% at 50% 30%, #000 30%, transparent 80%); animation: gridpan 60s linear infinite; }
+.bg .grid { position: absolute; inset: -60px; background-image: linear-gradient(rgba(150,215,245,.055) 1px, transparent 1px), linear-gradient(90deg, rgba(150,215,245,.055) 1px, transparent 1px); background-size: 60px 60px; -webkit-mask-image: radial-gradient(ellipse 70% 60% at 50% 30%, #000 30%, transparent 80%); mask-image: radial-gradient(ellipse 70% 60% at 50% 30%, #000 30%, transparent 80%); animation: gridpan 60s linear infinite; }
 @keyframes gridpan { to { transform: translate(60px, 60px); } }
 .bg canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
 .bg .vignette { position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 40%, transparent 55%, rgba(0,0,0,.7) 100%); }
@@ -113,14 +113,14 @@ td.num, th.num { text-align: right; font-family: var(--mono); }
 }
 /* login */
 #login { position: fixed; inset: 0; display: grid; place-items: center; padding: 16px; z-index: 10; }
-#login form { background: linear-gradient(180deg, rgba(24,24,28,.72), rgba(10,10,12,.72)); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); box-shadow: 0 30px 80px rgba(0,0,0,.65), inset 0 1px 0 rgba(255,255,255,.06); animation: rise .9s cubic-bezier(.2,.7,.2,1) both; }
+#login form { background: linear-gradient(180deg, rgba(16,32,48,.66), rgba(5,13,22,.7)); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); box-shadow: 0 30px 80px rgba(0,0,0,.65), inset 0 1px 0 rgba(255,255,255,.06); animation: rise .9s cubic-bezier(.2,.7,.2,1) both; }
 @keyframes rise { from { opacity: 0; transform: translateY(14px) scale(.985); } to { opacity: 1; transform: none; } }
 #login form { width: 100%; max-width: 380px; padding: 34px 28px 28px; text-align: center; }
 #login h1 { margin: 0 0 28px; font: 700 28px/1.15 var(--disp); letter-spacing: .16em; }
-#login input[type=password] { width: 100%; padding: 12px 14px; border-radius: 10px; border: 1px solid var(--line2); background: #08080a; color: var(--text); font: 15px var(--sans); outline: none; }
-#login input[type=password]:focus { border-color: var(--silver); box-shadow: 0 0 0 3px rgba(220,220,230,.08); }
+#login input[type=password] { width: 100%; padding: 12px 14px; border-radius: 10px; border: 1px solid var(--line2); background: #050c14; color: var(--text); font: 15px var(--sans); outline: none; }
+#login input[type=password]:focus { border-color: var(--silver); box-shadow: 0 0 0 3px rgba(170,225,250,.1); }
 #login label { display: flex; align-items: center; gap: 8px; justify-content: center; margin: 14px 0 18px; color: var(--muted); font-size: 12.5px; cursor: pointer; }
-#login button { width: 100%; padding: 12px; border: 0; border-radius: 10px; background: var(--chrome); color: #0a0a0c; font: 600 14px var(--disp); letter-spacing: .12em; text-transform: uppercase; cursor: pointer; }
+#login button { width: 100%; padding: 12px; border: 0; border-radius: 10px; background: var(--chrome); color: #04101a; font: 600 14px var(--disp); letter-spacing: .12em; text-transform: uppercase; cursor: pointer; }
 #login button:disabled { opacity: .6; cursor: wait; }
 #login .err { min-height: 20px; margin-top: 12px; color: var(--down); font-size: 13px; }
 .lock { background: none; border: 1px solid var(--line); color: var(--muted); border-radius: 999px; padding: 5px 11px; font: 12px var(--sans); cursor: pointer; }
@@ -225,7 +225,7 @@ footer { margin-top: 40px; color: var(--dim); font-size: 12px; text-align: cente
       p.y -= p.v; p.t += .01; p.x += Math.sin(p.t) * .08;
       if (p.y < -4) { p.y = h + 4; p.x = Math.random() * w; }
       x.globalAlpha = p.a * (.6 + .4 * Math.sin(p.t * 1.7));
-      x.fillStyle = "#e6e6ee"; x.beginPath(); x.arc(p.x, p.y, p.r, 0, 6.283); x.fill();
+      x.fillStyle = "#dff4ff"; x.beginPath(); x.arc(p.x, p.y, p.r, 0, 6.283); x.fill();
     }
     requestAnimationFrame(step);
   };
@@ -235,12 +235,12 @@ footer { margin-top: 40px; color: var(--dim); font-size: 12px; text-align: cente
 })();
 </script>
 <script src="config.js"></script>
-<script>document.write('<script src="sample-data.js?v=' + Date.now() + '"><\/script>')</script>
+<script>if (!(window.DESK_CONFIG || {}).dataUrl) document.write('<script src="sample-data.js?v=' + Date.now() + '"><\/script>')</script>
 <script>
 (() => {
   const CFG = window.DESK_CONFIG || {};
   const LWC = window.LightweightCharts;
-  const SHADE = ["#f4f4f6", "#b4b4bd", "#7f7f89", "#dcdce2", "#9a9aa3"];
+  const SHADE = ["#f4fbff", "#9fdcf5", "#4fa3cf", "#d4f0fc", "#78c2e4"];
   const state = { data: null, filter: null, ticker: null, alertId: null };
   const charts = {};
 
@@ -268,6 +268,11 @@ footer { margin-top: 40px; color: var(--dim); font-size: 12px; text-align: cente
         if (r.ok) return await r.json();
       } catch (e) { /* try the previous minute */ }
       if (!CFG.dataUrl.includes("{stamp}")) break;
+    }
+    if (CFG.fallbackUrl) {
+      // outside market hours nothing new is pushed, so the per-minute files run out: read the latest snapshot
+      const r = await fetch(CFG.fallbackUrl + "?t=" + Date.now(), { cache: "no-store" });
+      if (r.ok) return await r.json();
     }
     throw new Error("could not load data");
   }
@@ -355,11 +360,11 @@ footer { margin-top: 40px; color: var(--dim); font-size: 12px; text-align: cente
     if (charts[id]) return charts[id];
     const c = LWC.createChart($(id), {
       autoSize: true,
-      layout: { background: { type: "solid", color: "transparent" }, textColor: "#8b8b94", fontFamily: "JetBrains Mono, monospace", fontSize: 11 },
-      grid: { vertLines: { color: "rgba(205,205,215,.05)" }, horzLines: { color: "rgba(205,205,215,.05)" } },
-      rightPriceScale: { borderColor: "rgba(205,205,215,.13)" },
-      timeScale: { borderColor: "rgba(205,205,215,.13)", timeVisible: true, secondsVisible: false },
-      crosshair: { mode: 0, vertLine: { color: "rgba(220,220,230,.35)", labelBackgroundColor: "#2a2a30" }, horzLine: { color: "rgba(220,220,230,.35)", labelBackgroundColor: "#2a2a30" } },
+      layout: { background: { type: "solid", color: "transparent" }, textColor: "#7f9cb0", fontFamily: "JetBrains Mono, monospace", fontSize: 11 },
+      grid: { vertLines: { color: "rgba(150,215,245,.06)" }, horzLines: { color: "rgba(150,215,245,.06)" } },
+      rightPriceScale: { borderColor: "rgba(150,215,245,.14)" },
+      timeScale: { borderColor: "rgba(150,215,245,.14)", timeVisible: true, secondsVisible: false },
+      crosshair: { mode: 0, vertLine: { color: "rgba(170,225,250,.4)", labelBackgroundColor: "#163349" }, horzLine: { color: "rgba(170,225,250,.4)", labelBackgroundColor: "#163349" } },
       ...opts,
     });
     charts[id] = { c, series: [] };
@@ -367,7 +372,7 @@ footer { margin-top: 40px; color: var(--dim); font-size: 12px; text-align: cente
   }
   function clear(ch) { ch.series.forEach(s => ch.c.removeSeries(s)); ch.series = []; }
   function candles(ch, bars) {
-    const s = ch.c.addCandlestickSeries({ upColor: "#e9e9ee", downColor: "#3a3a41", borderUpColor: "#e9e9ee", borderDownColor: "#8b8b94", wickUpColor: "#b9b9c1", wickDownColor: "#6b6b74" });
+    const s = ch.c.addCandlestickSeries({ upColor: "#e6f6ff", downColor: "#12263a", borderUpColor: "#e6f6ff", borderDownColor: "#7f9cb0", wickUpColor: "#a9dcf3", wickDownColor: "#3f6782" });
     s.setData(bars.map(b => ({ time: b[0], open: b[1], high: b[2], low: b[3], close: b[4] })));
     ch.series.push(s);
     return s;
@@ -434,7 +439,7 @@ footer { margin-top: 40px; color: var(--dim); font-size: 12px; text-align: cente
     if (m.bars.length && m.bars[0].length > 5 && m.bars.some(b => b[5])) {
       const v = ch.c.addHistogramSeries({ priceScaleId: "vol", priceFormat: { type: "volume" }, lastValueVisible: false, priceLineVisible: false });
       ch.c.priceScale("vol").applyOptions({ scaleMargins: { top: .82, bottom: 0 } });
-      v.setData(m.bars.map(b => ({ time: b[0], value: b[5] || 0, color: b[4] >= b[1] ? "rgba(220,220,228,.22)" : "rgba(110,110,118,.28)" })));
+      v.setData(m.bars.map(b => ({ time: b[0], value: b[5] || 0, color: b[4] >= b[1] ? "rgba(190,232,252,.22)" : "rgba(60,110,150,.3)" })));
       ch.series.push(v);
     }
     const marks = visibleAlerts(d).filter(a => a.ticker === state.ticker).map(a => ({
@@ -473,11 +478,11 @@ footer { margin-top: 40px; color: var(--dim); font-size: 12px; text-align: cente
     if (!a.bars || !a.bars.length) return;
     const s = candles(ch, a.bars);
     const line = (price, title, color, style) => price != null && s.createPriceLine({ price, title, color, lineWidth: 1, lineStyle: style, axisLabelVisible: true });
-    line(a.entry, "entry", "#c4c4cc", 0);
+    line(a.entry, "entry", "#bfe7f8", 0);
     line(a.goal, "goal", "#8fd8ab", 2);
     line(a.stop, "stop", "#e89595", 2);
-    const marks = [{ time: a.bars[0][0], position: "belowBar", color: "#f4f4f6", shape: "arrowUp", text: "buy" }];
-    if (a.closed) marks.push({ time: etT(d.day, a.closed), position: "aboveBar", color: a.status === "goal" ? "#8fd8ab" : a.status === "stop" ? "#e89595" : "#8b8b94", shape: "arrowDown", text: a.status });
+    const marks = [{ time: a.bars[0][0], position: "belowBar", color: "#f4fbff", shape: "arrowUp", text: "buy" }];
+    if (a.closed) marks.push({ time: etT(d.day, a.closed), position: "aboveBar", color: a.status === "goal" ? "#8fd8ab" : a.status === "stop" ? "#e89595" : "#7f9cb0", shape: "arrowDown", text: a.status });
     s.setMarkers(marks);
     ch.c.timeScale().fitContent();
   }
