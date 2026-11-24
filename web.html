@@ -1,0 +1,270 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Milly Connection · Confluence Web</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Cinzel:wght@500;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* Milly Connection's theme (black and silver, from index.html). Cupinator's parts carry a red hue. */
+:root {
+  --bg: #040405; --panel: #0c0c0e; --panel2: #131316; --line: rgba(205,205,215,.13); --line2: rgba(205,205,215,.32);
+  --text: #ededf0; --silver: #c4c4cc; --muted: #8b8b94; --dim: #56565e;
+  --up: #8fd8ab; --down: #e89595; --warn: #e3c98a;
+  --cup: #ef5b6e; --cup2: #f7a3ae; --cupline: rgba(239,91,110,.38); --cupglow: rgba(239,91,110,.18);
+  --sans: "Manrope", system-ui, -apple-system, "Segoe UI", sans-serif; --disp: "Cinzel", Georgia, serif;
+  --mono: "JetBrains Mono", ui-monospace, Menlo, monospace; --r: 14px;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.5 var(--sans); }
+.wrap { position: relative; z-index: 1; max-width: 1320px; margin: 0 auto; padding: 20px 16px 60px; }
+a { color: var(--silver); }
+header { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 14px; padding: 6px 0 18px; border-bottom: 1px solid var(--line); }
+.brand { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.brand h1 { margin: 0; font: 700 26px/1 var(--disp); letter-spacing: .14em; }
+.brand span { color: var(--muted); font-size: 12px; letter-spacing: .2em; text-transform: uppercase; }
+.sheen { background: linear-gradient(100deg, #8e8e96 0%, #e9e9ee 30%, #ffffff 42%, #9a9aa2 55%, #dcdce2 75%, #8e8e96 100%); background-size: 250% 100%; -webkit-background-clip: text; background-clip: text; color: transparent; animation: sheen 7s ease-in-out infinite; }
+@keyframes sheen { 0%, 100% { background-position: 100% 0; } 50% { background-position: 0% 0; } }
+.navl { display: flex; gap: 8px; flex-wrap: wrap; }
+.navl a, .navl button { font: 500 12px var(--sans); color: var(--silver); text-decoration: none; padding: 6px 12px; border: 1px solid var(--line); border-radius: 999px; background: var(--panel); cursor: pointer; min-height: 32px; display: inline-flex; align-items: center; }
+.navl a:hover, .navl button:hover { border-color: var(--line2); }
+section { margin-top: 26px; animation: rise .7s cubic-bezier(.2,.7,.2,1) both; }
+h2 { margin: 0 0 12px; font: 500 12px/1 var(--disp); letter-spacing: .22em; text-transform: uppercase; color: var(--muted); display: flex; align-items: center; gap: 10px; }
+h2::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+.panel { background: linear-gradient(180deg, rgba(22,22,26,.82), rgba(11,11,13,.82)); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); border: 1px solid var(--line); border-radius: var(--r); box-shadow: inset 0 1px 0 rgba(255,255,255,.04); }
+.intro { color: var(--silver); max-width: 880px; margin: 16px 0 0; font-size: 13.5px; }
+.intro b.cup { color: var(--cup2); font-weight: 600; } .intro b.rag { color: #fff; font-weight: 600; }
+.bar { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 14px; }
+.tab { background: var(--panel); color: var(--muted); border: 1px solid var(--line); border-radius: 8px; padding: 6px 12px; font: 500 12.5px var(--mono); cursor: pointer; min-height: 32px; }
+.tab[aria-pressed="true"] { color: var(--text); border-color: var(--silver); background: var(--panel2); }
+.tab.cupt[aria-pressed="true"] { border-color: var(--cup); color: var(--cup2); box-shadow: 0 0 14px var(--cupglow); }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 12px; color: var(--muted); margin-top: 10px; }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.lg { width: 11px; height: 11px; border-radius: 50%; display: inline-block; }
+.row { display: flex; flex-wrap: wrap; gap: 14px; align-items: flex-start; }
+.grow { flex: 999 1 640px; min-width: 0; padding: 10px; } .side { flex: 1 1 320px; min-width: 0; padding: 16px; position: sticky; top: 12px; }
+.side.cupside { border-color: var(--cupline); box-shadow: 0 0 0 1px rgba(239,91,110,.12), 0 0 30px var(--cupglow), inset 0 1px 0 rgba(255,255,255,.04); }
+svg { display: block; width: 100%; height: auto; max-width: 1060px; margin: 0 auto; }
+.silk { fill: none; stroke: rgba(205,205,215,.09); stroke-width: .8; } .silk.ring { stroke: rgba(205,205,215,.16); stroke-width: 1; }
+.ringlbl { fill: var(--dim); font: 10px var(--mono); letter-spacing: .14em; }
+.edge { fill: none; stroke-width: 1.1; opacity: .22; } .edge.feeds { stroke: #c4c4cc; } .edge.target { stroke: var(--up); stroke-dasharray: 5 4; }
+.edge.gate { stroke: #9a9aa3; stroke-dasharray: 2 3; } .edge.same { stroke: var(--warn); stroke-dasharray: 1 3; stroke-width: 1.8; }
+.edge.cupe { stroke: var(--cup); }
+.edge.off { opacity: .04; } .edge.on { opacity: .9; stroke-width: 1.9; }
+.combo { fill: none; stroke: #ffffff; stroke-width: 2.6; opacity: .9; stroke-linecap: round; filter: drop-shadow(0 0 5px rgba(255,255,255,.45)); }
+.combo.cupc { stroke: var(--cup); filter: drop-shadow(0 0 6px rgba(239,91,110,.6)); }
+.node { cursor: pointer; } .node:focus { outline: none; } .node .hit { fill: transparent; }
+.node .dot { fill: #141417; stroke-width: 2.2; }
+.node text { fill: #dcdce2; font-size: 13px; font-weight: 500; paint-order: stroke; stroke: #040405; stroke-width: 4px; stroke-linejoin: round; }
+.node.rag .dot { stroke: #e9e9ee; } .node.both .dot { stroke: #e9e9ee; } .node.map .dot { stroke: #5a5a62; }
+.node.cup .dot { stroke: var(--cup); } .node.cup text { fill: var(--cup2); }
+.node.both .ring2 { fill: none; stroke: var(--cup); stroke-width: 1.4; opacity: .8; }
+.node.milly .dot { fill: #ffffff; } .node.cup.milly .dot { fill: var(--cup); }
+.node.in_bot .dot { fill: #6f6f78; } .node.failed .dot { fill: #3a2427; } .node.failed { opacity: .5; }
+.node.too_few .dot { fill: var(--warn); } .node.research .dot { stroke-dasharray: 3 2; } .node.retired { opacity: .25; }
+.node.dimmed { opacity: .1; } .node.sel .dot, .node:hover .dot, .node:focus .dot { stroke-width: 3.4; } .node.sel text { fill: #fff; font-weight: 700; }
+.hub circle { fill: #0c0c0e; stroke: rgba(205,205,215,.5); stroke-width: 1.5; } .hub text { font: 700 13px var(--disp); letter-spacing: .18em; fill: #ededf0; }
+.k { font: 10.5px var(--mono); color: var(--dim); letter-spacing: .12em; text-transform: uppercase; }
+.side h3 { margin: 4px 0 8px; font: 600 19px/1.2 var(--disp); }
+.side.cupside h3 { color: var(--cup2); }
+.pill { display: inline-block; font: 11px var(--mono); padding: 2px 9px; border-radius: 6px; border: 1px solid var(--line2); color: var(--silver); margin: 2px 5px 2px 0; }
+.pill.cup { color: var(--cup2); border-color: var(--cupline); background: rgba(239,91,110,.08); }
+.side p { margin: 8px 0; color: var(--silver); } .where { font: 12px var(--mono); color: var(--dim) !important; }
+.links button { font: 12.5px var(--sans); color: var(--text); background: var(--panel2); border: 1px solid var(--line); border-radius: 7px; padding: 4px 9px; margin: 4px 5px 0 0; cursor: pointer; }
+.links button.cup { border-color: var(--cupline); color: var(--cup2); }
+.links button:hover { border-color: var(--line2); }
+.tablewrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th { text-align: left; font-weight: 500; color: var(--dim); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; padding: 10px 12px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+td { padding: 11px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+tbody tr { cursor: pointer; transition: background .15s; } tbody tr:hover td { background: rgba(255,255,255,.025); } tbody tr.on td { background: rgba(239,91,110,.07); }
+td.id { font: 500 12px var(--mono); color: var(--cup2); white-space: nowrap; }
+td .why { color: var(--muted); font-size: 12.5px; margin-top: 4px; }
+.cupframe { border-color: var(--cupline); box-shadow: 0 0 0 1px rgba(239,91,110,.1), 0 0 36px var(--cupglow), inset 0 1px 0 rgba(255,255,255,.04); }
+.empty { padding: 26px; text-align: center; color: var(--muted); }
+.bg { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
+.bg .glow { position: absolute; border-radius: 50%; filter: blur(80px); opacity: .5; }
+.bg .g1 { width: 60vmax; height: 60vmax; left: -15vmax; top: -25vmax; background: radial-gradient(circle, rgba(220,220,232,.14), transparent 65%); animation: drift1 38s ease-in-out infinite alternate; }
+.bg .g2 { width: 50vmax; height: 50vmax; right: -18vmax; top: 30vh; background: radial-gradient(circle, rgba(239,91,110,.10), transparent 65%); animation: drift2 46s ease-in-out infinite alternate; }
+@keyframes drift1 { to { transform: translate(12vw, 8vh) scale(1.12); } } @keyframes drift2 { to { transform: translate(-10vw, -10vh) scale(.95); } }
+.bg .grid { position: absolute; inset: -60px; background-image: linear-gradient(rgba(205,205,215,.045) 1px, transparent 1px), linear-gradient(90deg, rgba(205,205,215,.045) 1px, transparent 1px); background-size: 60px 60px; -webkit-mask-image: radial-gradient(ellipse 70% 60% at 50% 30%, #000 30%, transparent 80%); mask-image: radial-gradient(ellipse 70% 60% at 50% 30%, #000 30%, transparent 80%); }
+.bg .vignette { position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 40%, transparent 55%, rgba(0,0,0,.7) 100%); }
+@keyframes rise { from { opacity: 0; transform: translateY(14px) scale(.985); } to { opacity: 1; transform: none; } }
+#login { position: fixed; inset: 0; display: none; place-items: center; padding: 16px; z-index: 10; }
+#login form { width: 100%; max-width: 380px; padding: 34px 28px 28px; text-align: center; background: linear-gradient(180deg, rgba(24,24,28,.72), rgba(10,10,12,.72)); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); box-shadow: 0 30px 80px rgba(0,0,0,.65), inset 0 1px 0 rgba(255,255,255,.06); }
+#login h1 { margin: 0 0 28px; font: 700 28px/1.15 var(--disp); letter-spacing: .16em; }
+#login input[type=password] { width: 100%; padding: 12px 14px; border-radius: 10px; border: 1px solid var(--line2); background: #08080a; color: var(--text); font: 15px var(--sans); outline: none; }
+#login label { display: flex; align-items: center; justify-content: center; gap: 8px; margin: 14px 0 18px; color: var(--muted); font-size: 13px; }
+#login button { width: 100%; padding: 11px; border-radius: 10px; border: 1px solid var(--line2); background: linear-gradient(180deg, #f2f2f5, #b9b9c1); color: #0a0a0c; font: 700 14px var(--sans); letter-spacing: .08em; cursor: pointer; }
+#login .err { color: var(--down); font-size: 13px; min-height: 18px; margin-top: 12px; }
+body.locked .wrap { display: none; }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+</style>
+</head>
+<body class="locked">
+<div class="bg" aria-hidden="true"><div class="glow g1"></div><div class="glow g2"></div><div class="grid"></div><div class="vignette"></div></div>
+<div id="login">
+  <form class="panel" autocomplete="on">
+    <h1 class="sheen">MILLY<br>CONNECTION</h1>
+    <input type="text" name="username" value="desk" autocomplete="username" hidden>
+    <input type="password" id="pass" placeholder="Passphrase" autocomplete="current-password" autocapitalize="none" autocorrect="off" spellcheck="false" required>
+    <label><input type="checkbox" id="remember"> Remember on this device</label>
+    <button type="submit">Unlock</button>
+    <div class="err" id="err"></div>
+  </form>
+</div>
+<div class="wrap">
+  <header>
+    <div class="brand"><h1 class="sheen">MILLY CONNECTION</h1><span>Confluence web</span></div>
+    <nav class="navl"><a href="index.html">Desk</a><a href="#web">Web</a><a href="#combos">Combinations</a><button id="lock" title="Forget the passphrase on this device">Lock</button></nav>
+  </header>
+  <p class="intro">Every confluence <b class="rag">Ragnarok</b> and <b class="cup">Cupinator</b> use, in one web: context at the centre, exits on the edge. Cupinator's parts glow red. The dot's fill says what testing found. Click a node for what it is and what it connects to, or a combination to light up its pieces.</p>
+  <div class="bar" id="filters"></div>
+  <div class="legend" id="legend"></div>
+  <section id="web">
+    <h2>The web</h2>
+    <div class="row">
+      <div class="panel grow"><svg id="svg" role="img" aria-label="The Milly confluence web"></svg></div>
+      <aside class="panel side" id="det"></aside>
+    </div>
+  </section>
+  <section id="combos">
+    <h2>Combinations to test · Ragnarok × Cupinator</h2>
+    <div class="panel tablewrap cupframe"><table><thead><tr><th>#</th><th>Combination</th><th>Rule (fixed before testing)</th><th>Status</th></tr></thead><tbody id="ctable"></tbody></table></div>
+  </section>
+</div>
+<script src="config.js"></script>
+<script>document.write('<script src="web-data.js?v=' + Date.now() + '"><\/script>')</script>
+<script>
+(() => {
+  "use strict";
+  const NS = "http://www.w3.org/2000/svg";
+  const $ = id => document.getElementById(id);
+  let D = null, byId = {};
+  const S = { src: new Set(["rag", "cup", "both", "map"]), hideFailed: false, sel: null, combo: null };
+  const SRC = { rag: "Ragnarok", cup: "Cupinator", both: "Both bots", map: "Map only" };
+
+  // ---------- unlock: the same passphrase and saved key as the desk (index.html, seal.py) ----------
+  const KEY_STORE = "vcdesk.key";
+  const b64 = s => Uint8Array.from(atob(s), c => c.charCodeAt(0));
+  const toB64 = buf => btoa(String.fromCharCode(...new Uint8Array(buf)));
+  const store = {
+    get() { try { return sessionStorage.getItem(KEY_STORE) || localStorage.getItem(KEY_STORE); } catch (e) { return null; } },
+    set(v, remember) { try { sessionStorage.setItem(KEY_STORE, v); if (remember) localStorage.setItem(KEY_STORE, v); } catch (e) { } },
+    clear() { try { sessionStorage.removeItem(KEY_STORE); localStorage.removeItem(KEY_STORE); } catch (e) { } },
+  };
+  async function decrypt(box, k) { return JSON.parse(new TextDecoder().decode(await crypto.subtle.decrypt({ name: "AES-GCM", iv: b64(box.iv) }, k, b64(box.ct)))); }
+  async function start() {
+    if (window.WEB_DATA) return show(window.WEB_DATA);                        // the plain copy (private repo only)
+    const box = window.WEB_BOX;
+    if (!box) { document.body.classList.remove("locked"); $("svg").replaceWith(Object.assign(document.createElement("div"), { className: "empty", textContent: "No web data on the site yet." })); return; }
+    const saved = store.get();
+    if (saved && saved.split(":")[0] === box.salt) {
+      try { const k = await crypto.subtle.importKey("raw", b64(saved.split(":")[1]), { name: "AES-GCM" }, false, ["decrypt"]); return show(await decrypt(box, k)); } catch (e) { /* ask */ }
+    }
+    $("login").style.display = "grid";
+    $("login").querySelector("form").onsubmit = async (ev) => {
+      ev.preventDefault(); $("err").textContent = "";
+      try {
+        const base = await crypto.subtle.importKey("raw", new TextEncoder().encode($("pass").value), "PBKDF2", false, ["deriveKey"]);
+        const k = await crypto.subtle.deriveKey({ name: "PBKDF2", hash: "SHA-256", salt: b64(box.salt), iterations: box.iter }, base, { name: "AES-GCM", length: 256 }, true, ["decrypt"]);
+        const data = await decrypt(box, k);
+        store.set(box.salt + ":" + toB64(await crypto.subtle.exportKey("raw", k)), $("remember").checked);
+        $("login").style.display = "none"; show(data);
+      } catch (e) { $("err").textContent = "That passphrase doesn't open it."; }
+    };
+  }
+  $("lock").onclick = () => { store.clear(); location.reload(); };
+
+  // ---------- drawing ----------
+  function sv(t, a = {}, ...k) { const e = document.createElementNS(NS, t); for (const [x, v] of Object.entries(a)) if (v != null) { if (x.startsWith("on")) e.addEventListener(x.slice(2), v); else e.setAttribute(x, v); } k.flat().forEach(c => c != null && e.append(c instanceof Node ? c : document.createTextNode(c))); return e; }
+  function h(t, a = {}, ...k) { const e = document.createElement(t); for (const [x, v] of Object.entries(a)) if (v != null) { if (x === "class") e.className = v; else if (x.startsWith("on")) e.addEventListener(x.slice(2), v); else e.setAttribute(x, v); } k.flat().forEach(c => c != null && e.append(c instanceof Node ? c : document.createTextNode(c))); return e; }
+  const visible = n => S.src.has(n.source) && !(S.hideFailed && (n.status === "failed" || n.status === "retired"));
+  const isCup = id => byId[id] && byId[id].source === "cup";
+  const comboIsCup = c => c.parts.some(isCup) || c.parts.some(p => byId[p] && byId[p].source === "both");
+  function draw() {
+    const svg = $("svg"); svg.textContent = "";
+    const R = [130, 235, 360, 470, 555, 635], size = 1480, c = size / 2, SP = 24;
+    svg.setAttribute("viewBox", `0 0 ${size} ${size}`);
+    const ids = D.nodes.filter(visible).map(n => n.id), pos = {}, taken = [];
+    const gap = (a, list) => Math.min(Math.PI, ...list.map(b => Math.abs(((a - b) % (2 * Math.PI) + 3 * Math.PI) % (2 * Math.PI) - Math.PI)));
+    D.layers.forEach((_, L) => {
+      const ring = ids.filter(i => byId[i].layer === L), n = Math.max(ring.length, 1); let start = -Math.PI / 2, best = -1;
+      for (let k = 0; k < 36 && taken.length; k++) { const s0 = -Math.PI / 2 + (k / 36) * (2 * Math.PI / n); const sc = Math.min(...ring.map((_, j) => gap(s0 + 2 * Math.PI * j / n, taken))); if (sc > best) { best = sc; start = s0; } }
+      const stag = n > 14 ? 24 : 0;
+      ring.forEach((id, j) => { const a = start + 2 * Math.PI * j / n; taken.push(a); const r = R[L] + (j % 2 ? stag : -stag); pos[id] = { x: c + r * Math.cos(a), y: c + r * Math.sin(a), a }; });
+    });
+    const thread = (p, q, pull) => { const mx = (p.x + q.x) / 2, my = (p.y + q.y) / 2; return `M${p.x},${p.y} Q${mx + (c - mx) * pull},${my + (c - my) * pull} ${q.x},${q.y}`; };
+    const silk = sv("g");
+    for (let k = 0; k < SP; k++) { const a = 2 * Math.PI * k / SP; silk.append(sv("line", { x1: c, y1: c, x2: c + (R[5] + 40) * Math.cos(a), y2: c + (R[5] + 40) * Math.sin(a), class: "silk" })); }
+    [60, ...R, R[5] + 40].forEach(r => { let d = ""; for (let k = 0; k <= SP; k++) { const a = 2 * Math.PI * k / SP, p = { x: c + r * Math.cos(a), y: c + r * Math.sin(a) }; if (!k) { d = `M${p.x},${p.y}`; continue; } const a0 = 2 * Math.PI * (k - 1) / SP, p0 = { x: c + r * Math.cos(a0), y: c + r * Math.sin(a0) }, mx = (p0.x + p.x) / 2, my = (p0.y + p.y) / 2; d += ` Q${mx + (c - mx) * .06},${my + (c - my) * .06} ${p.x},${p.y}`; } silk.append(sv("path", { d, class: "silk" + (R.includes(r) ? " ring" : "") })); });
+    svg.append(silk);
+    D.layers.forEach((name, L) => svg.append(sv("text", { x: c, y: c - R[L] + 32, "text-anchor": "middle", class: "ringlbl" }, `L${L} ${name.toUpperCase()}`)));
+    const combo = S.combo ? D.combos.find(x => x.id === S.combo) : null, parts = combo ? new Set(combo.parts) : null;
+    const ge = sv("g");
+    D.edges.forEach(e => { if (!pos[e.from] || !pos[e.to]) return;
+      const on = S.sel ? (e.from === S.sel || e.to === S.sel) : parts ? (parts.has(e.from) && parts.has(e.to)) : false;
+      ge.append(sv("path", { d: thread(pos[e.from], pos[e.to], .35), class: `edge ${e.kind}${isCup(e.from) || isCup(e.to) ? " cupe" : ""}${S.sel || parts ? (on ? " on" : " off") : ""}` })); });
+    svg.append(ge);
+    if (combo) { const ps = combo.parts.filter(p => pos[p]); const gc = sv("g"); for (let i = 1; i < ps.length; i++) gc.append(sv("path", { d: thread(pos[ps[0]], pos[ps[i]], .25), class: "combo" + (comboIsCup(combo) ? " cupc" : "") })); svg.append(gc); }
+    svg.append(sv("g", { class: "hub" }, sv("circle", { cx: c, cy: c, r: 52 }), sv("text", { x: c, y: c + 5, "text-anchor": "middle" }, S.combo || "MILLY")));
+    const gn = sv("g");
+    ids.forEach(id => { const n = byId[id], p = pos[id], cos = Math.cos(p.a), sin = Math.sin(p.a);
+      const anchor = Math.abs(cos) < .35 ? "middle" : cos > 0 ? "start" : "end";
+      const lx = p.x + cos * 17, ly = p.y + sin * 17 + (Math.abs(cos) < .35 ? (sin > 0 ? 10 : -3) : 4);
+      const linked = S.sel && (S.sel === id || D.edges.some(e => (e.from === S.sel && e.to === id) || (e.to === S.sel && e.from === id)));
+      const dim = (parts && !parts.has(id)) || (S.sel && !linked);
+      gn.append(sv("g", { class: `node ${n.source} ${n.status}${S.sel === id ? " sel" : ""}${dim ? " dimmed" : ""}`, tabindex: 0, role: "button", "aria-label": `${n.name}: ${SRC[n.source]}, ${D.status[n.status] || n.status}`,
+        onclick: () => pick(id), onkeydown: e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); pick(id); } } },
+        sv("title", {}, `${n.name} · ${SRC[n.source]} · ${D.status[n.status] || n.status}`), sv("circle", { cx: p.x, cy: p.y, r: 18, class: "hit" }),
+        n.source === "both" ? sv("circle", { cx: p.x, cy: p.y, r: 12.5, class: "ring2" }) : null,
+        sv("circle", { cx: p.x, cy: p.y, r: 8.5, class: "dot" }), sv("text", { x: lx, y: ly, "text-anchor": anchor }, n.name))); });
+    svg.append(gn);
+  }
+  function detail() {
+    const det = $("det"); det.textContent = ""; det.className = "panel side";
+    if (!S.sel) {
+      const cnt = s => D.nodes.filter(n => n.source === s).length;
+      det.append(h("div", { class: "k" }, "The web"), h("h3", {}, "Pick a node"), h("p", {}, `${D.nodes.length} confluences: ${cnt("rag")} Ragnarok, ${cnt("cup")} Cupinator, ${cnt("both")} in both bots, ${cnt("map")} from the map only. ${D.edges.length} links, ${D.combos.length} combinations to test.`));
+      return;
+    }
+    const n = byId[S.sel]; if (n.source === "cup" || n.source === "both") det.classList.add("cupside");
+    det.append(h("div", { class: "k" }, `L${n.layer} ${D.layers[n.layer]}`), h("h3", {}, n.name),
+      h("span", { class: "pill" + (n.source === "cup" || n.source === "both" ? " cup" : "") }, SRC[n.source]), h("span", { class: "pill" }, D.status[n.status] || n.status),
+      h("p", {}, n.about), h("p", { class: "where" }, n.where));
+    const kind = { feeds: "", target: " · target", gate: " · gate", same: " · same idea" };
+    const ins = D.edges.filter(e => e.to === n.id), outs = D.edges.filter(e => e.from === n.id);
+    const btn = id => h("button", { class: isCup(id) ? "cup" : "", onclick: () => pick(id) }, byId[id].name);
+    if (ins.length) det.append(h("div", { class: "k", style: "margin-top:12px" }, "Fed by"), h("div", { class: "links" }, ins.map(e => { const b = btn(e.from); b.textContent += kind[e.kind]; return b; })));
+    if (outs.length) det.append(h("div", { class: "k", style: "margin-top:12px" }, "Feeds into"), h("div", { class: "links" }, outs.map(e => { const b = btn(e.to); b.textContent += kind[e.kind]; return b; })));
+    const cs = D.combos.filter(x => x.parts.includes(n.id));
+    if (cs.length) det.append(h("div", { class: "k", style: "margin-top:12px" }, "In combinations"), h("div", { class: "links" }, cs.map(x => h("button", { class: "cup", onclick: () => setCombo(x.id) }, `${x.id} · ${x.name}`))));
+    det.append(h("div", { class: "links", style: "margin-top:14px" }, h("button", { onclick: () => pick(null) }, "Show the whole web")));
+  }
+  function table() {
+    const tb = $("ctable"); tb.textContent = "";
+    D.combos.forEach(x => tb.append(h("tr", { class: S.combo === x.id ? "on" : "", onclick: () => setCombo(S.combo === x.id ? null : x.id) },
+      h("td", { class: "id" }, x.id),
+      h("td", {}, h("b", {}, x.name), h("div", {}, x.parts.map(p => h("span", { class: "pill" + (byId[p].source === "cup" ? " cup" : "") }, byId[p].name)))),
+      h("td", {}, x.rule, h("div", { class: "why" }, x.why)), h("td", {}, h("span", { class: "pill" }, x.status)))));
+  }
+  function filters() {
+    const f = $("filters"); f.textContent = "";
+    Object.entries(SRC).forEach(([k, v]) => f.append(h("button", { class: "tab" + (k === "cup" ? " cupt" : ""), "aria-pressed": String(S.src.has(k)), onclick: () => { S.src.has(k) ? S.src.delete(k) : S.src.add(k); render(); } }, v)));
+    f.append(h("button", { class: "tab", "aria-pressed": String(S.hideFailed), onclick: () => { S.hideFailed = !S.hideFailed; render(); } }, "Hide failed / retired"));
+    const lg = $("legend"); lg.textContent = "";
+    [["Ragnarok", "border:2.5px solid #e9e9ee"], ["Cupinator", "border:2.5px solid var(--cup)"], ["Both bots", "border:2.5px solid #e9e9ee;box-shadow:0 0 0 2px var(--cup)"], ["Map only", "border:2.5px solid #5a5a62"],
+     ["In Milly", "background:#fff"], ["Runs in a bot", "background:#6f6f78"], ["Failed", "background:#3a2427;border:1px solid #6a3a40"], ["Too few", "background:var(--warn)"], ["Untested / spec", "border:1.5px dashed #8b8b94"]]
+      .forEach(([t, st]) => lg.append(h("span", {}, h("i", { class: "lg", style: st }), t)));
+  }
+  function pick(id) { S.sel = id; S.combo = null; render(); }
+  function setCombo(id) { S.combo = id; S.sel = null; render(); if (id) $("web").scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" }); }
+  function render() { filters(); draw(); detail(); table(); }
+  function show(data) { D = data; byId = Object.fromEntries(D.nodes.map(n => [n.id, n])); document.body.classList.remove("locked"); render(); }
+  start();
+})();
+</script>
+</body>
+</html>
