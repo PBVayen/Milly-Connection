@@ -27,6 +27,9 @@ header { display: flex; flex-wrap: wrap; align-items: center; justify-content: s
 .brand span { color: var(--muted); font-size: 12px; letter-spacing: .2em; text-transform: uppercase; }
 .sheen { background: linear-gradient(100deg, #8e8e96 0%, #e9e9ee 30%, #ffffff 42%, #9a9aa2 55%, #dcdce2 75%, #8e8e96 100%); background-size: 250% 100%; -webkit-background-clip: text; background-clip: text; color: transparent; animation: sheen 7s ease-in-out infinite; }
 @keyframes sheen { 0%, 100% { background-position: 100% 0; } 50% { background-position: 0% 0; } }
+body.embed .bg, body.embed header { display: none; }
+body.embed, body.embed html { background: transparent; }
+body.embed .wrap { max-width: none; padding: 0 0 20px; }
 .navl { display: flex; gap: 8px; flex-wrap: wrap; }
 .navl a, .navl button { font: 500 12px var(--sans); color: var(--silver); text-decoration: none; padding: 6px 12px; border: 1px solid var(--line); border-radius: 999px; background: var(--panel); cursor: pointer; min-height: 32px; display: inline-flex; align-items: center; }
 .navl a:hover, .navl button:hover { border-color: var(--line2); }
@@ -140,6 +143,12 @@ body.locked .wrap { display: none; }
 <script>
 (() => {
   "use strict";
+  const EMBED = new URLSearchParams(location.search).has("embed") && parent !== window;   // shown inside the desk page
+  if (EMBED) {
+    document.body.classList.add("embed"); document.documentElement.style.background = "transparent";
+    const tell = () => parent.postMessage({ webHeight: document.documentElement.scrollHeight }, location.origin);
+    new ResizeObserver(tell).observe(document.body); addEventListener("load", tell);
+  }
   const NS = "http://www.w3.org/2000/svg";
   const $ = id => document.getElementById(id);
   let D = null, byId = {};
@@ -150,19 +159,21 @@ body.locked .wrap { display: none; }
   const KEY_STORE = "vcdesk.key";
   const b64 = s => Uint8Array.from(atob(s), c => c.charCodeAt(0));
   const toB64 = buf => btoa(String.fromCharCode(...new Uint8Array(buf)));
+  // Reads the desk's saved key first. A key typed in here is saved under its own name, so it never replaces the desk's.
+  const WEB_STORE = "vcweb.key";
   const store = {
-    get() { try { return sessionStorage.getItem(KEY_STORE) || localStorage.getItem(KEY_STORE); } catch (e) { return null; } },
-    set(v, remember) { try { sessionStorage.setItem(KEY_STORE, v); if (remember) localStorage.setItem(KEY_STORE, v); } catch (e) { } },
-    clear() { try { sessionStorage.removeItem(KEY_STORE); localStorage.removeItem(KEY_STORE); } catch (e) { } },
+    all() { const o = []; try { for (const n of [KEY_STORE, WEB_STORE]) for (const st of [sessionStorage, localStorage]) { const v = st.getItem(n); if (v) o.push(v); } } catch (e) { } return o; },
+    set(v, remember) { try { sessionStorage.setItem(WEB_STORE, v); if (remember) localStorage.setItem(WEB_STORE, v); } catch (e) { } },
+    clear() { try { for (const n of [KEY_STORE, WEB_STORE]) { sessionStorage.removeItem(n); localStorage.removeItem(n); } } catch (e) { } },
   };
   async function decrypt(box, k) { return JSON.parse(new TextDecoder().decode(await crypto.subtle.decrypt({ name: "AES-GCM", iv: b64(box.iv) }, k, b64(box.ct)))); }
   async function start() {
     if (window.WEB_DATA) return show(window.WEB_DATA);                        // the plain copy (private repo only)
     const box = window.WEB_BOX;
     if (!box) { document.body.classList.remove("locked"); $("svg").replaceWith(Object.assign(document.createElement("div"), { className: "empty", textContent: "No web data on the site yet." })); return; }
-    const saved = store.get();
-    if (saved && saved.split(":")[0] === box.salt) {
-      try { const k = await crypto.subtle.importKey("raw", b64(saved.split(":")[1]), { name: "AES-GCM" }, false, ["decrypt"]); return show(await decrypt(box, k)); } catch (e) { /* ask */ }
+    for (const saved of store.all()) {
+      if (saved.split(":")[0] !== box.salt) continue;
+      try { const k = await crypto.subtle.importKey("raw", b64(saved.split(":")[1]), { name: "AES-GCM" }, false, ["decrypt"]); return show(await decrypt(box, k)); } catch (e) { /* next, then ask */ }
     }
     $("login").style.display = "grid";
     $("login").querySelector("form").onsubmit = async (ev) => {

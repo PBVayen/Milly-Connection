@@ -127,6 +127,19 @@ td.num, th.num { text-align: right; font-family: var(--mono); }
 .lock:hover { color: var(--text); border-color: var(--line2); }
 body.locked .wrap { display: none; }
 
+.pages { display: flex; gap: 6px; margin-top: 16px; }
+.pages a { padding: 7px 16px; border: 1px solid var(--line); border-radius: 999px; color: var(--muted); text-decoration: none; font: 500 11px/1.4 var(--disp); letter-spacing: .2em; text-transform: uppercase; background: var(--panel); transition: color .2s, border-color .2s; }
+.pages a:hover { color: var(--text); border-color: var(--line2); }
+.pages a.on { color: var(--text); border-color: var(--silver); box-shadow: 0 0 0 1px rgba(220,220,230,.15); }
+.pages a.cup { color: #f7a3ae; } .pages a.cup.on { border-color: rgba(239,91,110,.6); box-shadow: 0 0 0 1px rgba(239,91,110,.15), 0 0 24px rgba(239,91,110,.18); }
+#webpage { display: none; }
+#webpage iframe { display: block; width: 100%; height: 1400px; border: 0; background: transparent; }
+body.page-web .wrap > section:not(#webpage), body.page-web #banner { display: none; }
+body.page-web #webpage { display: block; }
+/* Cupinator's strategies carry a red hue */
+.card.owner-cup { border-color: rgba(239,91,110,.38); box-shadow: 0 0 0 1px rgba(239,91,110,.10), 0 0 30px rgba(239,91,110,.14), inset 0 1px 0 rgba(255,255,255,.04); }
+.card.owner-cup:hover, .card.owner-cup.on { border-color: rgba(239,91,110,.7); }
+.card.owner-cup h3 { color: #f7a3ae; }
 footer { margin-top: 40px; color: var(--dim); font-size: 12px; text-align: center; }
 @media (max-width: 640px) { .chart { height: 300px; } .chart.sm { height: 240px; } .brand h1 { font-size: 21px; } .stats { grid-template-columns: repeat(3, 1fr); } }
 </style>
@@ -148,6 +161,7 @@ footer { margin-top: 40px; color: var(--dim); font-size: 12px; text-align: cente
     <div class="brand"><h1 class="sheen">MILLY CONNECTION</h1><span>0DTE desk</span></div>
     <div class="status"><span class="status" id="status"></span><button class="lock" id="lock" title="Forget the passphrase on this device">Lock</button></div>
   </header>
+  <nav class="pages"><a href="#" data-page="desk" class="on">Desk</a><a href="#web" data-page="web" class="cup">Confluence web</a></nav>
   <div id="banner"></div>
 
   <section id="strategies">
@@ -185,6 +199,8 @@ footer { margin-top: 40px; color: var(--dim); font-size: 12px; text-align: cente
     </div>
     <div class="panel tablewrap" style="margin-top:12px" id="days"></div>
   </section>
+
+  <section id="webpage"><iframe id="webframe" title="Confluence web" loading="lazy"></iframe></section>
 
   <footer>Read-only alerts. No orders are placed. Not financial advice.</footer>
 </div>
@@ -290,11 +306,29 @@ footer { margin-top: 40px; color: var(--dim); font-size: 12px; text-align: cente
     } catch (e) { store.clear(); key = null; return false; }
   }
 
+  // ---------- pages: the desk, and the confluence web (web.html, shown in place) ----------
+  function page(name) {
+    const web = name === "web";
+    document.body.classList.toggle("page-web", web);
+    document.querySelectorAll(".pages a").forEach(a => a.classList.toggle("on", a.dataset.page === name));
+    const f = $("webframe");
+    if (web && !f.src) f.src = "web.html?embed=1";
+  }
+  document.querySelectorAll(".pages a").forEach(a => a.onclick = ev => {
+    ev.preventDefault(); page(a.dataset.page);
+    history.replaceState(null, "", a.dataset.page === "web" ? "#web" : location.pathname + location.search);
+    scrollTo({ top: 0 });
+  });
+  addEventListener("message", ev => {
+    if (ev.origin === location.origin && ev.data && ev.data.webHeight) $("webframe").style.height = Math.ceil(ev.data.webHeight) + "px";
+  });
+
   function unlocked() {
+    if (location.hash === "#web") page("web");
     document.body.classList.remove("locked");
     $("login").style.display = "none";
     renderAll(true);
-    if (location.hash) { const t = document.getElementById(location.hash.slice(1)); if (t) requestAnimationFrame(() => t.scrollIntoView()); }
+    if (location.hash && location.hash !== "#web") { const t = document.getElementById(location.hash.slice(1)); if (t) requestAnimationFrame(() => t.scrollIntoView()); }
     if (CFG.dataUrl) setInterval(tick, (CFG.refreshSeconds || 60) * 1000);
   }
 
@@ -361,7 +395,7 @@ footer { margin-top: 40px; color: var(--dim); font-size: 12px; text-align: cente
       const winF = f.alerts ? Math.round(100 * f.wins / f.alerts) : null;
       const bad = rp.checked_days && rp.matched_days < rp.checked_days;
       const row = (label, o) => o ? `<span>${label}</span><span class="mono">${o.trades ?? o.alerts ?? "–"}</span><span class="mono">${o.win ?? "–"}${o.win != null ? "%" : ""}</span><span class="mono ${cls(o.avg)}">${pct(o.avg)}</span>` : "";
-      return `<div class="panel card ${state.filter === s.key ? "on" : ""}" data-key="${esc(s.key)}">
+      return `<div class="panel card ${state.filter === s.key ? "on" : ""} ${/cup/i.test(s.owner || "") ? "owner-cup" : ""}" data-key="${esc(s.key)}">
         <div class="top"><h3><span class="swatch" style="background:${shade(s.key)}"></span>${esc(s.name)}</h3><span class="badge">${esc(s.mode || "")}</span></div>
         <div class="meta">${esc(s.owner)} · #${esc(s.channel || "no channel")}</div>
         <div class="rule">${esc(s.rule || "")}</div>
