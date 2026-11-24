@@ -77,8 +77,8 @@ section:nth-of-type(2) { animation-delay: .06s; } section:nth-of-type(3) { anima
 .chartbox { padding: 12px; }
 .charthead { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; padding: 2px 4px 10px; font-size: 13px; }
 .charthead b { font: 600 15px var(--mono); }
-.chart { height: 380px; width: 100%; }
-.chart.sm { height: 300px; }
+.chart { height: clamp(440px, 64vh, 720px); width: 100%; }
+.chart.sm { height: clamp(380px, 52vh, 560px); }
 .legend { display: flex; flex-wrap: wrap; gap: 14px; font-size: 12px; color: var(--muted); padding: 8px 4px 0; }
 
 /* alerts table */
@@ -137,7 +137,7 @@ body.has-full { overflow: hidden; }
 
 /* chart panes, toggles, VIX badge, crosshair readout */
 .chartwrap { position: relative; }
-.pane { height: 92px; width: 100%; border-top: 1px solid var(--line); position: relative; }
+.pane { height: 104px; width: 100%; border-top: 1px solid var(--line); position: relative; }
 .pane::before { content: attr(data-label); position: absolute; left: 6px; top: 4px; z-index: 3; font: 500 10.5px var(--mono); color: var(--muted); letter-spacing: .06em; pointer-events: none; }
 .vixbadge { position: absolute; top: 6px; right: 72px; z-index: 4; display: flex; gap: 10px; align-items: center; padding: 4px 10px; border-radius: 999px;
   background: rgba(6,16,26,.78); border: 1px solid var(--line); font: 500 12px var(--mono); color: var(--text); pointer-events: none; }
@@ -158,11 +158,15 @@ body.has-full { overflow: hidden; }
 .chartbox.full .chartwrap .chart { flex: 1; }
 @media (max-width: 640px) { .pane { height: 78px; } .vixbadge { right: 62px; font-size: 11px; } .ohlc { display: none; } }
 
-.pane.vol { height: 110px; }
+.pane.vol { height: 130px; }
 .chartbox.full .pane.vol { height: 15vh; }
 #prints td .call { color: #5fe0a8; font-weight: 600; } #prints td .put { color: #ff6b81; font-weight: 600; }
 #prints tr.fresh td { background: rgba(255,179,0,.08); }
 .big { color: #ffb300; font-weight: 600; }
+.tfs { display: inline-flex; border: 1px solid var(--line2); border-radius: 8px; overflow: hidden; margin-right: 6px; }
+.tfs button { background: transparent; color: var(--muted); border: 0; padding: 4px 12px; font: 600 12px var(--mono); cursor: pointer; }
+.tfs button + button { border-left: 1px solid var(--line); }
+.tfs button.on { background: #e8f6ff; color: #04111c; }
 /* login */
 #login { position: fixed; inset: 0; display: grid; place-items: center; padding: 16px; z-index: 10; }
 #login form { background: linear-gradient(180deg, rgba(16,32,48,.66), rgba(5,13,22,.7)); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); box-shadow: 0 30px 80px rgba(0,0,0,.65), inset 0 1px 0 rgba(255,255,255,.06); animation: rise .9s cubic-bezier(.2,.7,.2,1) both; }
@@ -304,7 +308,8 @@ footer { margin-top: 40px; color: var(--dim); font-size: 12px; text-align: cente
   const CFG = window.DESK_CONFIG || {};
   const LWC = window.LightweightCharts;
   const SHADE = ["#f4fbff", "#9fdcf5", "#4fa3cf", "#d4f0fc", "#78c2e4"];
-  const state = { data: null, filter: null, ticker: null, alertId: null };
+  const state = { data: null, filter: null, ticker: null, alertId: null, tf: 5 };
+  try { const t = Number(localStorage.getItem("milly-tf")); if ([1, 5, 15].includes(t)) state.tf = t; } catch (e) { }
   const charts = {};
 
   const $ = id => document.getElementById(id);
@@ -435,14 +440,36 @@ footer { margin-top: 40px; color: var(--dim); font-size: 12px; text-align: cente
   }
   function clear(ch) { ch.series.forEach(s => ch.c.removeSeries(s)); ch.series = []; (ch.lines || []).forEach(l => { try { l.s.removePriceLine(l.l); } catch (e) { } }); ch.lines = []; }
   function candles(ch, bars) {
-    const s = ch.c.addCandlestickSeries({ upColor: "#e6f6ff", downColor: "#12263a", borderUpColor: "#e6f6ff", borderDownColor: "#7f9cb0", wickUpColor: "#a9dcf3", wickDownColor: "#3f6782" });
+    const s = ch.c.addCandlestickSeries({ upColor: "#26c6a0", downColor: "#ef5370", borderUpColor: "#26c6a0", borderDownColor: "#ef5370", wickUpColor: "#26c6a0", wickDownColor: "#ef5370" });
     s.setData(bars.map(b => ({ time: b[0], open: b[1], high: b[2], low: b[3], close: b[4] })));
     ch.series.push(s);
     return s;
   }
 
 
-  // ---------- indicators (computed in the browser from the 1m bars) ----------
+  // ---------- timeframes: the feed sends 1m bars; 5m / 15m are built here ----------
+  const snapT = t => Math.floor(t / (state.tf * 60)) * state.tf * 60;
+  function agg(bars) {
+    if (state.tf === 1) return bars;
+    const out = [];
+    for (const b of bars) {
+      const t = snapT(b[0]), o = out[out.length - 1];
+      if (o && o[0] === t) { o[2] = Math.max(o[2], b[2]); o[3] = Math.min(o[3], b[3]); o[4] = b[4]; o[5] = (o[5] || 0) + (b[5] || 0); }
+      else out.push([t, b[1], b[2], b[3], b[4], b[5] || 0]);
+    }
+    return out;
+  }
+  function tfButtons() {
+    return `<span class="tfs">${[1, 5, 15].map(t => `<button data-tf="${t}" class="${state.tf === t ? "on" : ""}">${t}m</button>`).join("")}</span>`;
+  }
+  function hookTf(root) {
+    root.querySelectorAll(".tfs button").forEach(b => b.onclick = e => { e.stopPropagation(); state.tf = Number(b.dataset.tf);
+      try { localStorage.setItem("milly-tf", state.tf); } catch (err) { } renderAll(false); });
+  }
+  // how much to show: 1m the last ~2.5 hours, 5m / 15m all of today
+  const viewFrom = (prevLen, n) => state.tf === 1 ? Math.max(prevLen, n - 150) : prevLen;
+
+  // ---------- indicators (computed in the browser from the bars on screen) ----------
   const IND = {
     ema(v, n) { const k = 2 / (n + 1), o = []; let e = null; v.forEach((x, i) => { if (x == null) { o.push(null); return; } e = e == null ? x : x * k + e * (1 - k); o.push(i >= n - 1 ? e : null); }); return o; },
     sma(v, n) { const o = []; let s = 0; v.forEach((x, i) => { s += x; if (i >= n) s -= v[i - n]; o.push(i >= n - 1 ? s / n : null); }); return o; },
@@ -525,7 +552,7 @@ footer { margin-top: 40px; color: var(--dim); font-size: 12px; text-align: cente
     h.setMarkers(spikes.slice(-40).map(x => ({ time: bars[x.i][0], position: "aboveBar", color: "#ffb300", shape: "circle", size: 0.4, text: x.r.toFixed(0) + "×" })));
     const last = v.length - 1, r = avg[last] ? v[last] / avg[last] : null;
     const fmt = x => x >= 1e6 ? (x / 1e6).toFixed(2) + "M" : x >= 1e3 ? (x / 1e3).toFixed(1) + "K" : String(x);
-    el.dataset.label = `VOLUME ${fmt(v[last])}${r ? " · " + r.toFixed(1) + "× the 20-min average" : ""} · amber = 3×+`;
+    el.dataset.label = `VOLUME ${fmt(v[last])}${r ? " · " + r.toFixed(1) + "× the 20-bar average" : ""} · amber = 3×+`;
   }
   function crosshairReadout(set, bars, emaSets, target) {
     const idx = new Map(bars.map((b, i) => [b[0], i]));
@@ -542,8 +569,9 @@ footer { margin-top: 40px; color: var(--dim); font-size: 12px; text-align: cente
   }
   function toggles(d) {
     const items = [["ema", "EMA 9/20/50/200", "#ffd479"], ["vwap", "VWAP", "#c084fc"], ["levels", "DNF levels", "#e91e63"], ["trig", "DNF triggers", "#00c853"]];
-    $("mtoggles").innerHTML = items.map(([k, t, c]) => `<button class="tog ${OV[k] ? "on" : ""}" data-ov="${k}" style="--c:${c}"><i></i>${t}</button>`).join("");
+    $("mtoggles").innerHTML = tfButtons() + items.map(([k, t, c]) => `<button class="tog ${OV[k] ? "on" : ""}" data-ov="${k}" style="--c:${c}"><i></i>${t}</button>`).join("");
     $("mtoggles").querySelectorAll(".tog").forEach(b => b.onclick = () => { OV[b.dataset.ov] = !OV[b.dataset.ov]; renderMarkets(d); });
+    hookTf($("mtoggles"));
   }
 
   // ---------- render ----------
@@ -604,7 +632,7 @@ footer { margin-top: 40px; color: var(--dim); font-size: 12px; text-align: cente
     const stTxt = dnf ? `<span class="dnfstate">${["5", "10", "15", "30", "60", "240"].map(tf => { const v = (dnf.states || {})[tf]; return `<span class="${v === 1 ? "u" : v === -1 ? "d" : ""}">${tf === "60" ? "1h" : tf === "240" ? "4h" : tf + "m"} ${v === 1 ? "▲" : v === -1 ? "▼" : "–"}</span>`; }).join("")}</span>` : "";
     $("mhead").innerHTML = `<span><b>${esc(state.ticker)}</b> <span class="mono">${money(m.last).slice(1)}</span> <span class="${cls(m.change_pct)} mono">${pct(m.change_pct, 2)}</span></span>${stTxt}`;
     toggles(d);
-    const prev = m.prev || [], bars = prev.concat(m.bars), set = chartSet("m");
+    const prev = agg(m.prev || []), bars = prev.concat(agg(m.bars)), set = chartSet("m");
     const s = candles(set.main, bars);
     const c = bars.map(b => b[4]);
     const emas = [["E9", IND.ema(c, 9), "#ffd479"], ["E20", IND.ema(c, 20), "#f472b6"], ["E50", IND.ema(c, 50), "#7cc4e6"], ["E200", IND.ema(c, 200), "#ffffff"]];
@@ -623,30 +651,31 @@ footer { margin-top: 40px; color: var(--dim); font-size: 12px; text-align: cente
     }
     // markers: strategy alerts + DNF arrows (green/red aligned, blue 5m-only, yellow 30m/1h/4h)
     const marks = visibleAlerts(d).filter(a => a.ticker === state.ticker).map(a => ({
-      time: etT(d.day, a.time), position: a.side === "put" ? "aboveBar" : "belowBar", color: shade(a.strategy),
+      time: snapT(etT(d.day, a.time)), position: a.side === "put" ? "aboveBar" : "belowBar", color: shade(a.strategy),
       shape: a.side === "put" ? "arrowDown" : "arrowUp", text: `${short(a.strategy)} ${a.side === "put" ? "P" : "C"}`,
     }));
     if (OV.trig && dnf) {
-      dnf.arrows.forEach(a => marks.push({ time: a.t, position: a.dir === 1 ? "belowBar" : "aboveBar", shape: a.dir === 1 ? "arrowUp" : "arrowDown",
+      dnf.arrows.forEach(a => marks.push({ time: snapT(a.t), position: a.dir === 1 ? "belowBar" : "aboveBar", shape: a.dir === 1 ? "arrowUp" : "arrowDown",
         color: a.color === "green" ? (a.dir === 1 ? "#00c853" : "#ff1744") : "#2979ff", size: 1 }));
-      dnf.htf.forEach(h => marks.push({ time: h.t, position: h.dir === 1 ? "belowBar" : "aboveBar", shape: h.dir === 1 ? "arrowUp" : "arrowDown", color: "#ffd600", text: h.tf >= 60 ? h.tf / 60 + "h" : h.tf + "m", size: 0.6 }));
+      dnf.htf.forEach(h => marks.push({ time: snapT(h.t), position: h.dir === 1 ? "belowBar" : "aboveBar", shape: h.dir === 1 ? "arrowUp" : "arrowDown", color: "#ffd600", text: h.tf >= 60 ? h.tf / 60 + "h" : h.tf + "m", size: 0.6 }));
       // entry / stop line on the trigger candle's body, TP1-TP3 beyond it (8 five-minute bars long, like the Pine script)
       dnf.trades.slice(-2).forEach(tr => {  // the most recent 2, like the indicator's "trades kept on chart"
-        const end = tr.t + 8 * 300, col = tr.state === "stopped" ? "#7f9cb0" : tr.dir === 1 ? "#26a69a" : "#ef5350";
-        const seg = (price, color, style, w) => { const ls = set.main.c.addLineSeries({ color, lineWidth: w, lineStyle: style, priceLineVisible: false, lastValueVisible: false, crosshairMarkerVisible: false, autoscaleInfoProvider: () => null }); ls.setData([{ time: tr.t, value: price }, { time: end, value: price }].filter(p => p.time <= bars[bars.length - 1][0] || p.time === tr.t)); set.main.series.push(ls); };
+        const t0 = snapT(tr.t), end = t0 + 8 * 300, col = tr.state === "stopped" ? "#7f9cb0" : tr.dir === 1 ? "#26a69a" : "#ef5350";
+        const seg = (price, color, style, w) => { const ls = set.main.c.addLineSeries({ color, lineWidth: w, lineStyle: style, priceLineVisible: false, lastValueVisible: false, crosshairMarkerVisible: false, autoscaleInfoProvider: () => null }); ls.setData([{ time: t0, value: price }, { time: end, value: price }].filter(p => p.time <= bars[bars.length - 1][0] || p.time === t0)); set.main.series.push(ls); };
         seg(tr.entry, col, tr.state === "stopped" ? 2 : 0, 2);
         tr.tps.forEach((tp, i) => seg(tp, i < tr.hits ? col : col + "88", 1, 1));
       });
     }
-    (d.prints || []).filter(p => p.ticker === state.ticker && bars.some(b => b[0] === p.t)).forEach(p => marks.push({
-      time: p.t, position: p.side === "call" ? "belowBar" : "aboveBar", shape: "square", size: 0.7,
-      color: p.side === "call" ? "#5fe0a8" : "#ff6b81", text: `${p.strike}${p.side === "call" ? "C" : "P"} ${(p.vol / 1000).toFixed(1)}k` }));
+    const myPrints = (d.prints || []).filter(p => p.ticker === state.ticker && bars.some(b => b[0] === snapT(p.t)));
+    const topPrints = new Set(myPrints.slice().sort((x, y) => y.premium - x.premium).slice(0, 5));  // only the 5 biggest get a label
+    myPrints.forEach(p => marks.push({
+      time: snapT(p.t), position: p.side === "call" ? "belowBar" : "aboveBar", shape: "square", size: 0.7,
+      color: p.side === "call" ? "#5fe0a8" : "#ff6b81", text: topPrints.has(p) ? `${p.strike}${p.side === "call" ? "C" : "P"} ${(p.vol / 1000).toFixed(1)}k` : "" }));
     marks.sort((x, y) => x.time - y.time);
     s.setMarkers(marks);
-    set.main.c.timeScale().setVisibleLogicalRange({ from: prev.length, to: bars.length + 4 });
     drawVolume(set, bars);
     drawPanes(set, bars, [12, 26, 9]);
-    RESETS.m = () => { set.main.c.timeScale().setVisibleLogicalRange({ from: prev.length, to: bars.length + 4 }); [set.main, set.vol, set.macd, set.rsi, set.ttm].forEach(p => p.c.priceScale("right").applyOptions({ autoScale: true })); };
+    RESETS.m = () => { set.main.c.timeScale().setVisibleLogicalRange({ from: viewFrom(prev.length, bars.length), to: bars.length + 3 }); [set.main, set.vol, set.macd, set.rsi, set.ttm].forEach(p => p.c.priceScale("right").applyOptions({ autoScale: true })); };
     RESETS.m();
     crosshairReadout(set, bars, OV.ema ? emas : [], "mohlc");
     vixBadge(d, "mvix");
@@ -756,11 +785,12 @@ footer { margin-top: 40px; color: var(--dim); font-size: 12px; text-align: cente
   }
 
   function renderContract(d, a) {
-    $("chead").innerHTML = `<span><b>${esc(a.contract)}</b> <span class="muted">${esc(strat(a.strategy).name)} · ${esc(a.time)} ET</span></span>`
+    $("chead").innerHTML = `<span>${tfButtons()}<b>${esc(a.contract)}</b> <span class="muted">${esc(strat(a.strategy).name)} · ${esc(a.time)} ET</span></span>`
       + `<span class="mono"><span class="muted">entry</span> ${money(a.entry)} · <span class="muted">now</span> <span class="${cls(a.result_pct ?? a.pct)}">${pct(a.result_pct ?? a.pct)}</span> · <span class="muted">peak</span> ${pct(a.peak_pct)}${a.quote && a.quote.bid != null ? ` · <span class="muted">bid/ask</span> ${money(a.quote.bid)} × ${money(a.quote.ask)}` : ""}</span>`;
+    hookTf($("chead"));
     const set = chartSet("c");
     if (!a.bars || !a.bars.length) return;
-    const bars = a.bars, s = candles(set.main, bars), c = bars.map(b => b[4]);
+    const bars = agg(a.bars), s = candles(set.main, bars), c = bars.map(b => b[4]);
     const emas = [["E5", IND.ema(c, 5), "#ffd479"], ["E9", IND.ema(c, 9), "#f472b6"], ["E20", IND.ema(c, 20), "#c4a7ff"], ["E50", IND.ema(c, 50), "#7cc4e6"], ["E200", IND.ema(c, 200), "#ffffff"]];
     emas.forEach(([, v, col], i) => addLine(set.main, bars, v, col, i === 4 ? 2 : 1));
     addLine(set.main, bars, IND.vwap(bars), "#c084fc", 1, { lineStyle: 2 });
@@ -769,8 +799,8 @@ footer { margin-top: 40px; color: var(--dim); font-size: 12px; text-align: cente
     line(a.goal, a.goal && a.entry ? "+" + Math.round((a.goal / a.entry - 1) * 100) + "%" : "goal", "#5fe0a8", 2);
     line(a.stop, "stop", "#e89595", 2);
     const t0 = etT(d.day, a.time);
-    const marks = [{ time: bars.find(b => b[0] >= t0) ? bars.find(b => b[0] >= t0)[0] : bars[0][0], position: "belowBar", color: "#f4fbff", shape: "arrowUp", text: "CALLOUT " + money(a.entry).slice(1) }];
-    if (a.closed) marks.push({ time: etT(d.day, a.closed), position: "aboveBar", color: a.status === "goal" ? "#8fd8ab" : a.status === "stop" ? "#e89595" : "#7f9cb0", shape: "arrowDown", text: a.status });
+    const tIn = snapT(t0), marks = [{ time: bars.find(b => b[0] >= tIn) ? bars.find(b => b[0] >= tIn)[0] : bars[0][0], position: "belowBar", color: "#f4fbff", shape: "arrowUp", text: "CALLOUT " + money(a.entry).slice(1) }];
+    if (a.closed) marks.push({ time: snapT(etT(d.day, a.closed)), position: "aboveBar", color: a.status === "goal" ? "#8fd8ab" : a.status === "stop" ? "#e89595" : "#7f9cb0", shape: "arrowDown", text: a.status });
     s.setMarkers(marks);
     set.main.c.timeScale().fitContent();
     drawVolume(set, bars);
