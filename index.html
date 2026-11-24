@@ -111,6 +111,29 @@ td.num, th.num { text-align: right; font-family: var(--mono); }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
+
+/* option chain */
+.chain table { font-size: 12.5px; }
+.chain th, .chain td { padding: 7px 10px; }
+.chain td.k { text-align: center; font: 600 13px var(--mono); color: var(--text); background: rgba(150,215,245,.05); }
+.chain th.k { text-align: center; }
+.chain th.side { text-align: center; color: var(--silver); letter-spacing: .14em; }
+.chain tr.atm td { background: rgba(150,215,245,.10); }
+.chain tr.atm td.k { color: #ffffff; box-shadow: inset 0 0 0 1px rgba(150,215,245,.45); }
+.chain td.itm { background: rgba(150,215,245,.035); }
+.chain .occ { cursor: default; }
+.chainhead { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; padding: 12px 14px 4px; font-size: 13px; }
+
+/* full-screen charts: double-tap or double-click a chart */
+.chart { cursor: zoom-in; }
+.chartbox.full { position: fixed; inset: 0; z-index: 60; margin: 0; border-radius: 0; display: flex; flex-direction: column;
+  padding: max(12px, env(safe-area-inset-top, 0px)) max(14px, env(safe-area-inset-right, 0px)) max(12px, env(safe-area-inset-bottom, 0px)) max(14px, env(safe-area-inset-left, 0px));
+  background: linear-gradient(180deg, #0b1724, #02060c); animation: none; }
+.chartbox.full .chart { flex: 1; height: auto !important; min-height: 0; cursor: zoom-out; }
+.chartbox .fullhint { display: none; }
+.chartbox.full .fullhint { display: block; position: absolute; top: max(12px, env(safe-area-inset-top, 0px)); right: max(14px, env(safe-area-inset-right, 0px));
+  font-size: 12px; color: var(--muted); background: rgba(8,18,28,.8); border: 1px solid var(--line); border-radius: 999px; padding: 4px 10px; z-index: 2; }
+body.has-full { overflow: hidden; }
 /* login */
 #login { position: fixed; inset: 0; display: grid; place-items: center; padding: 16px; z-index: 10; }
 #login form { background: linear-gradient(180deg, rgba(16,32,48,.66), rgba(5,13,22,.7)); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); box-shadow: 0 30px 80px rgba(0,0,0,.65), inset 0 1px 0 rgba(255,255,255,.06); animation: rise .9s cubic-bezier(.2,.7,.2,1) both; }
@@ -176,6 +199,10 @@ footer { margin-top: 40px; color: var(--dim); font-size: 12px; text-align: cente
       <div class="charthead" id="mhead"></div>
       <div class="chart" id="mchart"></div>
       <div class="legend" id="mlegend"></div>
+    </div>
+    <div class="panel chain" style="margin-top:12px">
+      <div class="chainhead" id="chainhead"></div>
+      <div class="tablewrap" id="chain"></div>
     </div>
   </section>
 
@@ -448,21 +475,78 @@ footer { margin-top: 40px; color: var(--dim); font-size: 12px; text-align: cente
     })).sort((x, y) => x.time - y.time);
     s.setMarkers(marks);
     ch.c.timeScale().fitContent();
+    renderChain(d);
     const keys = [...new Set(visibleAlerts(d).map(a => a.strategy))];
     $("mlegend").innerHTML = keys.map(k => `<span><span class="swatch" style="background:${shade(k)}"></span>${esc(strat(k).name)}</span>`).join("") + `<span class="dim">▲ call · ▼ put</span>`;
   }
+
+
+  function renderChain(d) {
+    const c = (d.chains || {})[state.ticker];
+    if (!c || !c.rows || !c.rows.length) {
+      const down = ((d.bot || {}).sources || {})["Webull options"] === "down" || ((d.bot || {}).sources || {}).Webull === "down";
+      $("chainhead").innerHTML = `<span><b>${esc(state.ticker || "")}</b> options</span>`;
+      $("chain").innerHTML = `<div class="empty">${down ? "Option prices come from Webull, which isn't answering right now." : "No option chain for this ticker yet."}</div>`;
+      return;
+    }
+    const n = (v, dgt = 2) => v == null ? '<span class="dim">–</span>' : Number(v).toFixed(dgt);
+    const vol = v => v == null ? '<span class="dim">–</span>' : Number(v).toLocaleString("en-US");
+    const exp = new Date(c.expiry + "T12:00:00Z").toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", timeZone: "UTC" });
+    $("chainhead").innerHTML = `<span><b>${esc(state.ticker)}</b> options · ${esc(exp)}${c.expiry === d.day ? " (0DTE)" : ""}</span><span class="muted">spot ${n(c.spot)} · Webull ${esc(c.asof || "")} ET</span>`;
+    const side = (q, itm) => q ? `<td class="num ${itm ? "itm" : ""}">${n(q.bid)}</td><td class="num ${itm ? "itm" : ""}">${n(q.ask)}</td><td class="num ${itm ? "itm" : ""}">${n(q.last)}</td><td class="num ${itm ? "itm" : ""}">${vol(q.vol)}</td><td class="num ${itm ? "itm" : ""}">${n(q.delta, 2)}</td>`
+      : `<td class="num dim" colspan="5">–</td>`;
+    const sideR = (q, itm) => q ? `<td class="num ${itm ? "itm" : ""}">${n(q.delta, 2)}</td><td class="num ${itm ? "itm" : ""}">${vol(q.vol)}</td><td class="num ${itm ? "itm" : ""}">${n(q.last)}</td><td class="num ${itm ? "itm" : ""}">${n(q.bid)}</td><td class="num ${itm ? "itm" : ""}">${n(q.ask)}</td>`
+      : `<td class="num dim" colspan="5">–</td>`;
+    $("chain").innerHTML = `<table><thead>
+      <tr><th class="side" colspan="5">Calls</th><th class="k"></th><th class="side" colspan="5">Puts</th></tr>
+      <tr><th class="num">Bid</th><th class="num">Ask</th><th class="num">Last</th><th class="num">Vol</th><th class="num">Δ</th><th class="k">Strike</th><th class="num">Δ</th><th class="num">Vol</th><th class="num">Last</th><th class="num">Bid</th><th class="num">Ask</th></tr>
+      </thead><tbody>` + c.rows.map(r => `<tr class="${r.strike === c.atm ? "atm" : ""}">${side(r.call, r.strike < c.spot)}<td class="k">${n(r.strike, r.strike % 1 ? 1 : 0)}</td>${sideR(r.put, r.strike > c.spot)}</tr>`).join("") + `</tbody></table>`;
+  }
+
+  // ---------- full-screen charts: double-tap (phone) or double-click (desktop); again or Esc to close ----------
+  let lastToggle = 0;
+  function toggleFull(box) {
+    if (Date.now() - lastToggle < 450) return;
+    lastToggle = Date.now();
+    const on = !box.classList.contains("full");
+    document.querySelectorAll(".chartbox.full").forEach(b => b.classList.remove("full"));
+    box.classList.toggle("full", on);
+    document.body.classList.toggle("has-full", on);
+    try {
+      if (on && box.requestFullscreen) box.requestFullscreen().catch(() => {});
+      else if (!on && document.fullscreenElement) document.exitFullscreen().catch(() => {});
+    } catch (e) { /* the overlay alone still works */ }
+  }
+  document.addEventListener("fullscreenchange", () => {
+    if (!document.fullscreenElement) { document.querySelectorAll(".chartbox.full").forEach(b => b.classList.remove("full")); document.body.classList.remove("has-full"); }
+  });
+  document.addEventListener("keydown", e => { if (e.key === "Escape") { const b = document.querySelector(".chartbox.full"); if (b) toggleFull(b); } });
+  document.querySelectorAll(".chartbox").forEach(box => {
+    const chartEl = box.querySelector(".chart");
+    if (!chartEl) return;
+    const hint = document.createElement("div"); hint.className = "fullhint"; hint.textContent = "Double-tap to close";
+    box.appendChild(hint);
+    chartEl.addEventListener("dblclick", () => toggleFull(box));
+    let tap = 0, tx = 0, ty = 0;
+    chartEl.addEventListener("touchend", e => {
+      if (e.touches.length || e.changedTouches.length !== 1) return;
+      const t = e.changedTouches[0], now = Date.now();
+      if (now - tap < 320 && Math.abs(t.clientX - tx) < 30 && Math.abs(t.clientY - ty) < 30) { e.preventDefault(); tap = 0; toggleFull(box); }
+      else { tap = now; tx = t.clientX; ty = t.clientY; }
+    }, { passive: false });
+  });
 
   function renderAlerts(d) {
     const rows = visibleAlerts(d).slice().sort((a, b) => a.time < b.time ? 1 : -1);
     if (!rows.length) { $("alerts").innerHTML = `<div class="empty">No alerts${state.filter ? " for " + esc(strat(state.filter).name) : ""} yet today.</div>`; $("cbox").style.display = "none"; return; }
     $("cbox").style.display = "";
     if (!rows.some(a => a.id === state.alertId)) state.alertId = (rows.find(a => a.status === "open") || rows[0]).id;
-    $("alerts").innerHTML = `<table><thead><tr><th>Time</th><th>Strategy</th><th>Contract</th><th class="num">Entry</th><th class="num">Last</th><th class="num">Now</th><th class="num">Peak</th><th class="num">Goal</th><th class="num">Stop</th><th>Status</th></tr></thead><tbody>`
+    $("alerts").innerHTML = `<table><thead><tr><th>Time</th><th>Strategy</th><th>Contract</th><th class="num">Entry</th><th class="num">Bid / Ask</th><th class="num">Last</th><th class="num">Now</th><th class="num">Peak</th><th class="num">Goal</th><th class="num">Stop</th><th>Status</th></tr></thead><tbody>`
       + rows.map(a => `<tr class="${a.id === state.alertId ? "on" : ""}" data-id="${a.id}">
         <td class="mono">${esc(a.time)}</td>
         <td><span class="swatch" style="background:${shade(a.strategy)}"></span>${esc(strat(a.strategy).name)}</td>
         <td class="mono">${esc(a.ticker)} ${esc(a.side)} <span class="dim">${esc(a.contract)}</span></td>
-        <td class="num">${money(a.entry)}</td><td class="num">${money(a.last)}</td>
+        <td class="num">${money(a.entry)}</td><td class="num">${a.quote && a.quote.bid != null ? money(a.quote.bid) + " / " + money(a.quote.ask) : '<span class="dim">–</span>'}</td><td class="num">${money(a.last)}</td>
         <td class="num ${cls(a.result_pct ?? a.pct)}">${pct(a.result_pct ?? a.pct)}</td>
         <td class="num">${pct(a.peak_pct)}</td><td class="num">${money(a.goal)}</td><td class="num">${a.stop == null ? '<span class="dim">none</span>' : money(a.stop)}</td>
         <td><span class="st ${esc(a.status)}">${esc(a.status)}${a.closed ? " " + esc(a.closed) : ""}</span></td></tr>`).join("")
