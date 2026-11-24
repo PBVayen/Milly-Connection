@@ -167,6 +167,26 @@ body.has-full { overflow: hidden; }
 .tfs button { background: transparent; color: var(--muted); border: 0; padding: 4px 12px; font: 600 12px var(--mono); cursor: pointer; }
 .tfs button + button { border-left: 1px solid var(--line); }
 .tfs button.on { background: #e8f6ff; color: #04111c; }
+
+/* brain: GEX layer */
+.brainpanel { padding: 14px 16px; margin-bottom: 12px; }
+.brainpanel:empty { display: none; }
+.bhead { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; }
+.bhead h3 { margin: 0; font: 600 12px var(--sans); letter-spacing: .16em; text-transform: uppercase; color: var(--silver); }
+.regime { font: 600 13px var(--mono); padding: 4px 10px; border-radius: 8px; border: 1px solid; }
+.regime.positive { color: #7fd8ff; border-color: rgba(127,216,255,.45); background: rgba(127,216,255,.08); }
+.regime.negative { color: #ffb36b; border-color: rgba(255,179,107,.5); background: rgba(255,179,107,.08); }
+.regime.unstable { color: #ffe082; border-color: rgba(255,224,130,.5); background: rgba(255,224,130,.08); }
+.bconf { font: 500 11px var(--mono); color: var(--warn); }
+.bplay { margin: 10px 0 8px; font-size: 13.5px; color: var(--text); max-width: 80ch; }
+.bnotes { margin: 0 0 8px; padding-left: 18px; font-size: 12.5px; color: var(--silver); }
+.blevels { display: flex; flex-wrap: wrap; gap: 6px 16px; font: 12px var(--mono); color: var(--muted); }
+.blevels b { color: var(--text); font-weight: 600; }
+.bothers { display: flex; flex-wrap: wrap; gap: 6px; margin-left: auto; }
+.bothers span { font: 11px var(--mono); color: var(--muted); border: 1px solid var(--line); border-radius: 6px; padding: 2px 7px; }
+.bothers .positive { color: #7fd8ff; } .bothers .negative { color: #ffb36b; } .bothers .unstable { color: #ffe082; }
+.bfoot { margin-top: 8px; font-size: 11px; color: var(--dim); }
+.gexc { position: absolute; left: 0; top: 0; pointer-events: none; z-index: 2; }
 /* login */
 #login { position: fixed; inset: 0; display: grid; place-items: center; padding: 16px; z-index: 10; }
 #login form { background: linear-gradient(180deg, rgba(16,32,48,.66), rgba(5,13,22,.7)); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); box-shadow: 0 30px 80px rgba(0,0,0,.65), inset 0 1px 0 rgba(255,255,255,.06); animation: rise .9s cubic-bezier(.2,.7,.2,1) both; }
@@ -228,10 +248,11 @@ footer { margin-top: 40px; color: var(--dim); font-size: 12px; text-align: cente
   <section id="markets">
     <h2>Markets</h2>
     <div class="tabs" id="mtabs"></div>
+    <div class="panel brainpanel" id="brain"></div>
     <div class="panel chartbox">
       <div class="charthead" id="mhead"></div>
       <div class="toggles" id="mtoggles"></div>
-      <div class="chartwrap"><div class="chart" id="mchart"></div><div class="vixbadge" id="mvix"></div><div class="ohlc" id="mohlc"></div></div>
+      <div class="chartwrap"><div class="chart" id="mchart"></div><canvas class="gexc" id="mgex"></canvas><div class="vixbadge" id="mvix"></div><div class="ohlc" id="mohlc"></div></div>
       <div class="pane vol" id="mvol"></div><div class="pane" id="mmacd"></div><div class="pane" id="mrsi"></div><div class="pane" id="mttm"></div>
       <div class="legend" id="mlegend"></div>
     </div>
@@ -493,7 +514,7 @@ footer { margin-top: 40px; color: var(--dim); font-size: 12px; text-align: cente
   };
 
   // ---------- chart sets: a main chart and MACD / RSI / TTM panes on one time axis ----------
-  const OV = { ema: true, vwap: true, levels: true, trig: true };
+  const OV = { ema: true, vwap: true, levels: true, trig: true, gex: true };
   const RESETS = {};  // how to put each chart back to its starting view (Ctrl+R / Alt+R)
   function paneChart(id) { return chart(id, { rightPriceScale: { borderColor: "rgba(150,215,245,.14)", minimumWidth: 64 }, timeScale: { visible: false }, handleScale: false, handleScroll: false }); }
   function chartSet(prefix) {
@@ -568,10 +589,67 @@ footer { margin-top: 40px; color: var(--dim); font-size: 12px; text-align: cente
     $(id).innerHTML = v.VIX ? `<b>VIX</b> ${v.VIX.last.toFixed(2)} <span class="${cls(v.VIX.change_pct)}">${v.VIX.change_pct > 0 ? "▲" : "▼"} ${pct(v.VIX.change_pct, 1)}</span>${v.VIX1D ? ` <b>1D</b> ${v.VIX1D.last.toFixed(2)}` : ""}` : "";
   }
   function toggles(d) {
-    const items = [["ema", "EMA 9/20/50/200", "#ffd479"], ["vwap", "VWAP", "#c084fc"], ["levels", "DNF levels", "#e91e63"], ["trig", "DNF triggers", "#00c853"]];
+    const items = [["ema", "EMA 9/20/50/200", "#ffd479"], ["vwap", "VWAP", "#c084fc"], ["levels", "DNF levels", "#e91e63"], ["trig", "DNF triggers", "#00c853"], ["gex", "GEX map", "#7fd8ff"]];
     $("mtoggles").innerHTML = tfButtons() + items.map(([k, t, c]) => `<button class="tog ${OV[k] ? "on" : ""}" data-ov="${k}" style="--c:${c}"><i></i>${t}</button>`).join("");
     $("mtoggles").querySelectorAll(".tog").forEach(b => b.onclick = () => { OV[b.dataset.ov] = !OV[b.dataset.ov]; renderMarkets(d); });
     hookTf($("mtoggles"));
+  }
+
+
+  // ---------- the brain: GEX layer ----------
+  const REG = { positive: "Positive gamma · range", negative: "Negative gamma · trend", unstable: "On the flip · unstable" };
+  const GEX_HIST_MIN = 5;
+  function renderBrain(d) {
+    const all = d.gex || {}, g = all[state.ticker];
+    if (!g) { $("brain").innerHTML = ""; return; }
+    const r = g.read || {}, k = x => x == null ? "–" : Number(x).toLocaleString("en-US", { maximumFractionDigits: 2 });
+    const rg = x => (x.read || {}).regime || x.regime;
+    const others = Object.entries(all).map(([t, x]) => `<span class="${esc(rg(x))}">${esc(t)} ${rg(x) === "unstable" ? "≈" : rg(x) === "positive" ? "+γ" : "−γ"}</span>`).join("");
+    $("brain").innerHTML = `<div class="bhead"><h3>Brain · GEX</h3><span class="regime ${esc(r.regime)}">${esc(REG[r.regime] || r.regime)}</span>
+        <span class="mono muted">${esc(r.total_text || "")}</span>${r.confidence !== "normal" ? `<span class="bconf">confidence: ${esc(r.confidence)}</span>` : ""}
+        <span class="bothers">${others}</span></div>
+      <div class="bplay">${esc(r.playbook || "")}</div>
+      ${(r.notes || []).length ? `<ul class="bnotes">${r.notes.map(n => `<li>${esc(n)}</li>`).join("")}</ul>` : ""}
+      <div class="blevels"><span>γ flip <b>${g.flip ? k(g.flip) : "none within ±4%"}</b>${r.flip_distance_pct != null ? ` (${r.flip_distance_pct > 0 ? "+" : ""}${r.flip_distance_pct}%)` : ""}</span>
+        <span>call wall <b style="color:#5fe0a8">${k(g.call_wall)}</b></span><span>put wall <b style="color:#ff6b81">${k(g.put_wall)}</b></span>
+        <span>pins <b style="color:#ffd600">${(g.pins || []).map(k).join(" · ") || "–"}</b></span></div>
+      <div class="bfoot">Estimate, not observed data · ${esc(g.model || "")} · ${(g.expiries || []).length} of ${g.expiries_wanted || "?"} expiries (next 7 days) · ${Math.round(100 * (g.expiring_today || 0))}% of it expires today · context for entries, never an entry by itself</div>`;
+  }
+  // heat bands (per-strike GEX through the day) + the current profile on the right edge, drawn over the candles
+  const GEXDRAW = {};
+  function gexOverlay(set, s, g) {
+    const cv = $("mgex"), el = $("mchart");
+    const draw = () => {
+      const dpr = window.devicePixelRatio || 1, W = el.clientWidth, H = el.clientHeight;
+      if (cv.width !== Math.round(W * dpr) || cv.height !== Math.round(H * dpr)) { cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr); cv.style.width = W + "px"; cv.style.height = H + "px"; }
+      const x = cv.getContext("2d"); x.setTransform(dpr, 0, 0, dpr, 0, 0); x.clearRect(0, 0, W, H);
+      if (!OV.gex || !g || !g.profile || !g.profile.length) return;
+      const ts = set.main.c.timeScale(), pw = ts.width(), ph = H - 28;
+      const ks = g.profile.map(r => r[0]), gaps = ks.slice(1).map((v, i) => v - ks[i]).filter(v => v > 0), step = gaps.length ? Math.min(...gaps) : 1;
+      const band = k => { const y0 = s.priceToCoordinate(k - step / 2), y1 = s.priceToCoordinate(k + step / 2); return y0 == null || y1 == null ? null : [Math.min(y0, y1), Math.max(2, Math.abs(y0 - y1))]; };
+      const col = (n, a) => n >= 0 ? `rgba(127,216,255,${a})` : `rgba(255,150,70,${a})`;
+      x.save(); x.beginPath(); x.rect(0, 0, pw, ph); x.clip();
+      const hist = g.hist || [], spacing = ts.options().barSpacing || 6;
+      hist.forEach((h, i) => {
+        const x0 = ts.timeToCoordinate(snapT(h[0])); if (x0 == null) return;
+        const nx = i + 1 < hist.length ? ts.timeToCoordinate(snapT(hist[i + 1][0])) : null;
+        const x1 = nx != null && nx > x0 ? nx : x0 + Math.max(spacing, GEX_HIST_MIN / state.tf * spacing);
+        h[1].forEach(([k, n]) => { const b = band(k); if (b) { x.fillStyle = col(n, Math.min(.42, Math.abs(n) * .42)); x.fillRect(x0 - spacing / 2, b[0], x1 - x0, b[1]); } });
+      });
+      g.profile.forEach(r => { const b = band(r[0]); if (!b) return; const len = Math.abs(r[2]) * Math.min(120, pw * .16);
+        x.fillStyle = col(r[2], .22 + Math.abs(r[2]) * .55); x.fillRect(pw - len, b[0] + b[1] * .15, len, Math.max(2, b[1] * .7)); });
+      x.restore();
+    };
+    GEXDRAW.m = draw;
+    if (!set.main.gexHooked) {
+      set.main.gexHooked = true;
+      let raf = 0; const kick = () => { cancelAnimationFrame(raf); raf = requestAnimationFrame(() => GEXDRAW.m && GEXDRAW.m()); };
+      set.main.c.timeScale().subscribeVisibleLogicalRangeChange(kick);
+      set.main.c.subscribeCrosshairMove(kick);
+      try { new ResizeObserver(kick).observe(el); } catch (e) { }
+      setInterval(kick, 1500);   // the price scale can re-fit without a range change
+    }
+    requestAnimationFrame(draw);
   }
 
   // ---------- render ----------
@@ -649,6 +727,16 @@ footer { margin-top: 40px; color: var(--dim); font-size: 12px; text-align: cente
         set.main.lines.push({ s, l: s.createPriceLine({ price: q.price, color: isMid ? "#ffd600" : "rgba(64,140,255,.75)", lineWidth: 1, lineStyle: isMid ? 0 : 1, axisLabelVisible: isMid, title: isMid ? "50%" : "" }) });
       });
     }
+    // GEX levels from the brain (only those near price, so they can't stretch the scale)
+    const gx = (d.gex || {})[state.ticker];
+    if (OV.gex && gx) {
+      const nearG = p => p != null && Math.abs(p - m.last) / m.last < 0.015;
+      const gl = (price, title, color, style) => nearG(price) && set.main.lines.push({ s, l: s.createPriceLine({ price, title, color, lineWidth: 1, lineStyle: style, axisLabelVisible: true }) });
+      gl(gx.flip, "γ flip", "#ffffff", 2);
+      gl(gx.call_wall, "Call wall", "#5fe0a8", 0);
+      if (gx.put_wall !== gx.call_wall) gl(gx.put_wall, "Put wall", "#ff6b81", 0);
+      (gx.pins || []).filter(k => k !== gx.call_wall && k !== gx.put_wall).forEach(k => gl(k, "pin", "#ffd600", 3));
+    }
     // markers: strategy alerts + DNF arrows (green/red aligned, blue 5m-only, yellow 30m/1h/4h)
     const marks = visibleAlerts(d).filter(a => a.ticker === state.ticker).map(a => ({
       time: snapT(etT(d.day, a.time)), position: a.side === "put" ? "aboveBar" : "belowBar", color: shade(a.strategy),
@@ -678,6 +766,8 @@ footer { margin-top: 40px; color: var(--dim); font-size: 12px; text-align: cente
     RESETS.m = () => { set.main.c.timeScale().setVisibleLogicalRange({ from: viewFrom(prev.length, bars.length), to: bars.length + 3 }); [set.main, set.vol, set.macd, set.rsi, set.ttm].forEach(p => p.c.priceScale("right").applyOptions({ autoScale: true })); };
     RESETS.m();
     crosshairReadout(set, bars, OV.ema ? emas : [], "mohlc");
+    gexOverlay(set, s, gx);
+    renderBrain(d);
     vixBadge(d, "mvix");
     renderChain(d);
     renderPrints(d);
