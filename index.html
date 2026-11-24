@@ -157,6 +157,12 @@ body.has-full { overflow: hidden; }
 .chartbox.full .chartwrap { flex: 1; min-height: 0; display: flex; }
 .chartbox.full .chartwrap .chart { flex: 1; }
 @media (max-width: 640px) { .pane { height: 78px; } .vixbadge { right: 62px; font-size: 11px; } .ohlc { display: none; } }
+
+.pane.vol { height: 110px; }
+.chartbox.full .pane.vol { height: 15vh; }
+#prints td .call { color: #5fe0a8; font-weight: 600; } #prints td .put { color: #ff6b81; font-weight: 600; }
+#prints tr.fresh td { background: rgba(255,179,0,.08); }
+.big { color: #ffb300; font-weight: 600; }
 /* login */
 #login { position: fixed; inset: 0; display: grid; place-items: center; padding: 16px; z-index: 10; }
 #login form { background: linear-gradient(180deg, rgba(16,32,48,.66), rgba(5,13,22,.7)); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); box-shadow: 0 30px 80px rgba(0,0,0,.65), inset 0 1px 0 rgba(255,255,255,.06); animation: rise .9s cubic-bezier(.2,.7,.2,1) both; }
@@ -222,12 +228,16 @@ footer { margin-top: 40px; color: var(--dim); font-size: 12px; text-align: cente
       <div class="charthead" id="mhead"></div>
       <div class="toggles" id="mtoggles"></div>
       <div class="chartwrap"><div class="chart" id="mchart"></div><div class="vixbadge" id="mvix"></div><div class="ohlc" id="mohlc"></div></div>
-      <div class="pane" id="mmacd"></div><div class="pane" id="mrsi"></div><div class="pane" id="mttm"></div>
+      <div class="pane vol" id="mvol"></div><div class="pane" id="mmacd"></div><div class="pane" id="mrsi"></div><div class="pane" id="mttm"></div>
       <div class="legend" id="mlegend"></div>
     </div>
     <div class="panel chain" style="margin-top:12px">
       <div class="chainhead" id="chainhead"></div>
       <div class="tablewrap" id="chain"></div>
+    </div>
+    <div class="panel" style="margin-top:12px">
+      <div class="chainhead" id="printshead"></div>
+      <div class="tablewrap" id="prints"></div>
     </div>
   </section>
 
@@ -238,7 +248,7 @@ footer { margin-top: 40px; color: var(--dim); font-size: 12px; text-align: cente
       <div class="panel chartbox" id="cbox">
         <div class="charthead" id="chead"></div>
         <div class="chartwrap"><div class="chart sm" id="cchart"></div><div class="vixbadge" id="cvix"></div><div class="ohlc" id="cohlc"></div></div>
-        <div class="pane" id="cmacd"></div><div class="pane" id="crsi"></div><div class="pane" id="cttm"></div>
+        <div class="pane vol" id="cvol"></div><div class="pane" id="cmacd"></div><div class="pane" id="crsi"></div><div class="pane" id="cttm"></div>
       </div>
     </div>
   </section>
@@ -460,12 +470,12 @@ footer { margin-top: 40px; color: var(--dim); font-size: 12px; text-align: cente
   const RESETS = {};  // how to put each chart back to its starting view (Ctrl+R / Alt+R)
   function paneChart(id) { return chart(id, { rightPriceScale: { borderColor: "rgba(150,215,245,.14)", minimumWidth: 64 }, timeScale: { visible: false }, handleScale: false, handleScroll: false }); }
   function chartSet(prefix) {
-    const set = { main: chart(prefix + "chart", { rightPriceScale: { borderColor: "rgba(150,215,245,.14)", minimumWidth: 64 } }), macd: paneChart(prefix + "macd"), rsi: paneChart(prefix + "rsi"), ttm: paneChart(prefix + "ttm") };
+    const set = { main: chart(prefix + "chart", { rightPriceScale: { borderColor: "rgba(150,215,245,.14)", minimumWidth: 64 } }), vol: paneChart(prefix + "vol"), macd: paneChart(prefix + "macd"), rsi: paneChart(prefix + "rsi"), ttm: paneChart(prefix + "ttm") };
     if (!set.main.synced) {
       set.main.synced = true;
-      set.main.c.timeScale().subscribeVisibleLogicalRangeChange(r => { if (r) [set.macd, set.rsi, set.ttm].forEach(p => p.c.timeScale().setVisibleLogicalRange(r)); });
+      set.main.c.timeScale().subscribeVisibleLogicalRangeChange(r => { if (r) [set.vol, set.macd, set.rsi, set.ttm].forEach(p => p.c.timeScale().setVisibleLogicalRange(r)); });
     }
-    [set.main, set.macd, set.rsi, set.ttm].forEach(clear);
+    [set.main, set.vol, set.macd, set.rsi, set.ttm].forEach(clear);
     return set;
   }
   const pts = (bars, v) => bars.map((b, i) => v[i] == null || Number.isNaN(v[i]) ? { time: b[0] } : { time: b[0], value: v[i] });
@@ -495,6 +505,27 @@ footer { margin-top: 40px; color: var(--dim); font-size: 12px; text-align: cente
     document.getElementById(set.macd.el).dataset.label = `MACD ${macdCfg.join("/")} ${f(last(m.line))} / ${f(last(m.sig))} · hist ${f(last(m.hist))}`;
     document.getElementById(set.rsi.el).dataset.label = `RSI 14 ${f(last(r), 1)}`;
     document.getElementById(set.ttm.el).dataset.label = `TTM SQUEEZE ${f(last(t.mom), 2)}${last(t.sq) ? " · squeeze ON" : ""}`;
+  }
+
+  function drawVolume(set, bars) {
+    const el = document.getElementById(set.vol.el);
+    if (!bars.some(b => b[5])) { el.style.display = "none"; return; }
+    el.style.display = "";
+    const v = bars.map(b => b[5] || 0);
+    const avg = v.map((_, i) => { if (i < 5) return null; let a = 0, n = 0; for (let j = Math.max(0, i - 20); j < i; j++) { a += v[j]; n++; } return a / n; });
+    // scale to the busy-but-normal minutes (97th percentile) so the open / close auctions don't flatten the rest
+    const sorted = v.filter(x => x > 0).sort((x, y) => x - y), cap = sorted.length ? sorted[Math.floor(sorted.length * 0.97)] * 1.6 : 1;
+    const h = set.vol.c.addHistogramSeries({ priceFormat: { type: "volume" }, priceLineVisible: false, lastValueVisible: false,
+      autoscaleInfoProvider: () => ({ priceRange: { minValue: 0, maxValue: cap } }) });
+    h.setData(bars.map((b, i) => { const r = avg[i] ? v[i] / avg[i] : 0;
+      return { time: b[0], value: v[i], color: r >= 3 ? "#ffb300" : r >= 2 ? "#ffe082" : b[4] >= b[1] ? "rgba(150,215,245,.55)" : "rgba(60,110,150,.75)" }; }));
+    set.vol.series.push(h);
+    addLine(set.vol, bars, avg, "rgba(255,255,255,.35)", 1);
+    const spikes = bars.map((b, i) => ({ i, r: avg[i] ? v[i] / avg[i] : 0 })).filter(x => x.r >= 3);
+    h.setMarkers(spikes.slice(-40).map(x => ({ time: bars[x.i][0], position: "aboveBar", color: "#ffb300", shape: "circle", size: 0.4, text: x.r.toFixed(0) + "×" })));
+    const last = v.length - 1, r = avg[last] ? v[last] / avg[last] : null;
+    const fmt = x => x >= 1e6 ? (x / 1e6).toFixed(2) + "M" : x >= 1e3 ? (x / 1e3).toFixed(1) + "K" : String(x);
+    el.dataset.label = `VOLUME ${fmt(v[last])}${r ? " · " + r.toFixed(1) + "× the 20-min average" : ""} · amber = 3×+`;
   }
   function crosshairReadout(set, bars, emaSets, target) {
     const idx = new Map(bars.map((b, i) => [b[0], i]));
@@ -575,12 +606,6 @@ footer { margin-top: 40px; color: var(--dim); font-size: 12px; text-align: cente
     toggles(d);
     const prev = m.prev || [], bars = prev.concat(m.bars), set = chartSet("m");
     const s = candles(set.main, bars);
-    if (bars.some(b => b[5])) {
-      const v = set.main.c.addHistogramSeries({ priceScaleId: "vol", priceFormat: { type: "volume" }, lastValueVisible: false, priceLineVisible: false });
-      set.main.c.priceScale("vol").applyOptions({ scaleMargins: { top: .84, bottom: 0 } });
-      v.setData(bars.map(b => ({ time: b[0], value: b[5] || 0, color: b[4] >= b[1] ? "rgba(190,232,252,.18)" : "rgba(60,110,150,.26)" })));
-      set.main.series.push(v);
-    }
     const c = bars.map(b => b[4]);
     const emas = [["E9", IND.ema(c, 9), "#ffd479"], ["E20", IND.ema(c, 20), "#f472b6"], ["E50", IND.ema(c, 50), "#7cc4e6"], ["E200", IND.ema(c, 200), "#ffffff"]];
     if (OV.ema) emas.forEach(([, v, col], i) => addLine(set.main, bars, v, col, i === 3 ? 2 : 1));
@@ -613,15 +638,20 @@ footer { margin-top: 40px; color: var(--dim); font-size: 12px; text-align: cente
         tr.tps.forEach((tp, i) => seg(tp, i < tr.hits ? col : col + "88", 1, 1));
       });
     }
+    (d.prints || []).filter(p => p.ticker === state.ticker && bars.some(b => b[0] === p.t)).forEach(p => marks.push({
+      time: p.t, position: p.side === "call" ? "belowBar" : "aboveBar", shape: "square", size: 0.7,
+      color: p.side === "call" ? "#5fe0a8" : "#ff6b81", text: `${p.strike}${p.side === "call" ? "C" : "P"} ${(p.vol / 1000).toFixed(1)}k` }));
     marks.sort((x, y) => x.time - y.time);
     s.setMarkers(marks);
     set.main.c.timeScale().setVisibleLogicalRange({ from: prev.length, to: bars.length + 4 });
+    drawVolume(set, bars);
     drawPanes(set, bars, [12, 26, 9]);
-    RESETS.m = () => { set.main.c.timeScale().setVisibleLogicalRange({ from: prev.length, to: bars.length + 4 }); [set.main, set.macd, set.rsi, set.ttm].forEach(p => p.c.priceScale("right").applyOptions({ autoScale: true })); };
+    RESETS.m = () => { set.main.c.timeScale().setVisibleLogicalRange({ from: prev.length, to: bars.length + 4 }); [set.main, set.vol, set.macd, set.rsi, set.ttm].forEach(p => p.c.priceScale("right").applyOptions({ autoScale: true })); };
     RESETS.m();
     crosshairReadout(set, bars, OV.ema ? emas : [], "mohlc");
     vixBadge(d, "mvix");
     renderChain(d);
+    renderPrints(d);
     const keys = [...new Set(visibleAlerts(d).map(a => a.strategy))];
     $("mlegend").innerHTML = keys.map(k => `<span><span class="swatch" style="background:${shade(k)}"></span>${esc(strat(k).name)}</span>`).join("")
       + (dnf ? `<span><span style="color:#00c853">▲</span><span style="color:#ff1744">▼</span> DNF aligned 5/10/15 · <span style="color:#2979ff">▲▼</span> 5m only · <span style="color:#ffd600">▲▼</span> 30m/1h/4h</span>` : "")
@@ -629,6 +659,21 @@ footer { margin-top: 40px; color: var(--dim); font-size: 12px; text-align: cente
   }
 
 
+
+  function renderPrints(d) {
+    const all = (d.prints || []), list = all.filter(p => p.ticker === state.ticker).slice().reverse();
+    $("printshead").innerHTML = `<span><b>Volume prints</b> <span class="muted">· ${esc(state.ticker)} · ${all.length} today across all tickers</span></span><span class="muted">1-min option volume ≥ 1,000 and ≥ 5× its usual minute · posted to #volume-prints</span>`;
+    if (!list.length) { $("prints").innerHTML = `<div class="empty">No unusual option volume on ${esc(state.ticker)} yet today.</div>`; return; }
+    const prem = x => x >= 1e6 ? "$" + (x / 1e6).toFixed(2) + "M" : "$" + (x / 1e3).toFixed(0) + "K";
+    const fresh = list.length ? list[0].t : 0;
+    $("prints").innerHTML = `<table><thead><tr><th>Time</th><th>Side</th><th>Contract</th><th class="num">Contracts</th><th class="num">vs usual</th><th class="num">Price</th><th class="num">Premium</th><th class="num">Spot</th></tr></thead><tbody>`
+      + list.map(p => `<tr class="${p.t === fresh ? "fresh" : ""}"><td class="mono">${esc(p.time)}</td><td><span class="${p.side}">${p.side === "call" ? "Calls" : "Puts"}</span></td>
+        <td class="mono">${esc(p.ticker)} ${p.strike}${p.side === "call" ? "C" : "P"} <span class="dim">${esc(p.expiry === d.day ? "0DTE" : p.expiry.slice(5))}</span></td>
+        <td class="num ${p.vol >= 5000 ? "big" : ""}">${p.vol.toLocaleString("en-US")}</td><td class="num">${p.mult}×</td><td class="num">${money(p.price)}</td>
+        <td class="num ${p.premium >= 1e6 ? "big" : ""}">${prem(p.premium)}</td><td class="num">${p.spot != null ? Number(p.spot).toFixed(2) : "–"}</td></tr>`).join("")
+      + `</tbody></table>`;
+    $("prints").querySelectorAll("tbody tr").forEach(tr => tr.style.cursor = "default");
+  }
   function renderChain(d) {
     const c = (d.chains || {})[state.ticker];
     if (!c || !c.rows || !c.rows.length) {
@@ -728,8 +773,9 @@ footer { margin-top: 40px; color: var(--dim); font-size: 12px; text-align: cente
     if (a.closed) marks.push({ time: etT(d.day, a.closed), position: "aboveBar", color: a.status === "goal" ? "#8fd8ab" : a.status === "stop" ? "#e89595" : "#7f9cb0", shape: "arrowDown", text: a.status });
     s.setMarkers(marks);
     set.main.c.timeScale().fitContent();
+    drawVolume(set, bars);
     drawPanes(set, bars, [8, 17, 9]);
-    RESETS.c = () => { set.main.c.timeScale().fitContent(); [set.main, set.macd, set.rsi, set.ttm].forEach(p => p.c.priceScale("right").applyOptions({ autoScale: true })); };
+    RESETS.c = () => { set.main.c.timeScale().fitContent(); [set.main, set.vol, set.macd, set.rsi, set.ttm].forEach(p => p.c.priceScale("right").applyOptions({ autoScale: true })); };
     RESETS.c();
     crosshairReadout(set, bars, emas, "cohlc");
     vixBadge(d, "cvix");
